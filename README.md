@@ -16,13 +16,13 @@ git clone https://github.com/KnoBuddy/visualdiffusion/
 ```
 conda activate progrockdiffusion
 cd progrockdiffusion
-python prdgui.py
+python visualdiffusion\prdgui.py
 ```
 ### [Linux/MacOS]
 ```
 conda activate progrockdiffusion
 cd progrockdiffusion
-python3 prdgui.py
+python3 visualdiffusion\prdgui.py
 ```
 ## Open the GUI
 
