@@ -321,8 +321,6 @@ prompt_text = json_set['text_prompts']
 def get_prompts():
     global prompt_text
     prompt_text = json_set['text_prompts']
-    if prompt_text["0"] == []:
-        prompt_text["0"] = default_prompt
     for x in range(len(prompt_text)):
         x = str(x)
         for i in range(len(prompt_text[x])):
