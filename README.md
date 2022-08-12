@@ -1,6 +1,8 @@
 # VisualDiffusion
 A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Notebooks.
 
+![image](https://user-images.githubusercontent.com/64171756/184454721-59578536-06a6-425d-b817-3755f7c977a6.png)
+
 # Instructions for progrockdiffusion
 
 ## Install PRD
