@@ -25,11 +25,11 @@ if os.path.exists(gui_settings):
         print("GUI settings loaded")
     except:
         print("Error loading gui_settings.json")
-        print("Loading from settings.json...")
+        print("Loading from Defaults...")
         json_set = json.load(open(default_settings))
+        json_set['text_prompts']['0'] = default_prompt
 else:
     json_set = json.load(open(default_settings))
-    json_set['text_prompts']['0'] = default_prompt
     print("Default settings loaded")
 
     
@@ -131,7 +131,7 @@ def save_text():
     x = diffusion_model_text.get()
     json_set['diffusion_model'] = x
     x = symm_loss_scale_text.get()
-    json_set['symm_loss_scale'] = int(float(x))
+    json_set['symm_loss_scale'] = x
     x = symmetry_loss_v_text.get()
     json_set['symmetry_loss_v'] = x
     x = symmetry_loss_h_text.get()
