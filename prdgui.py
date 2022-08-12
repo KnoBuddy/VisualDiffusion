@@ -9,19 +9,29 @@ import subprocess
 from time import *
 from PIL import Image
 
-if os.path.exists('gui_settings.json'):
+path = os.path.dirname(os.getcwd())
+gui_settings = 'gui_settings.json'
+default_settings = 'settings.json'
+progress = 'progress.png'
+progress_done = 'progress_done.png'
+prd = 'prd.py'
+
+default_prompt = ["A beautiful painting of a Castle in the Scottish Highlands, underexposed and overcast:1", "by Banksy, Beeple, and Bob Ross:0.75", "trending on ArtStation, vibrant:0.5", "bokeh, blur, dof, depth of field:-1"]
+
+
+if os.path.exists(gui_settings):
     try:
-        json_set = json.load(open('gui_settings.json'))
+        json_set = json.load(open(gui_settings))
         print("GUI settings loaded")
     except:
         print("Error loading gui_settings.json")
         print("Loading from settings.json...")
-        json_set = json.load(open('settings.json'))
+        json_set = json.load(open(default_settings))
 else:
-    json_set = json.load(open('settings.json'))
+    json_set = json.load(open(default_settings))
+    json_set['text_prompts']['0'] = default_prompt
     print("Default settings loaded")
 
-default_prompt = ["A beautiful painting of a Castle in the Scottish Highlands, underexposed and overcast:1", "by Banksy, Beeple, and Bob Ross:0.75", "trending on ArtStation, vibrant:0.5", "bokeh, blur, dof, depth of field:-1"]
     
 
 is_running = False
@@ -158,7 +168,7 @@ def save_text():
     if json_set['text_prompts']['0'] == []:
         json_set['text_prompts']['0'] = default_prompt
         get_prompts()
-    with open("gui_settings.json", "w+", encoding="utf-8") as outfile:
+    with open(gui_settings, "w+", encoding="utf-8") as outfile:
         json.dump(json_set, outfile, ensure_ascii=False, indent=4)
 
 def run_thread():
@@ -175,7 +185,7 @@ def run_thread():
 
 def do_run():
     global is_running
-    p = subprocess.Popen(shlex.split('python prd.py -s gui_settings.json '+extra_args_text.get()), stdout=subprocess.PIPE, text=True)
+    p = subprocess.Popen(shlex.split('python prd.py -s '+gui_settings+' '+extra_args_text.get()), stdout=subprocess.PIPE, text=True)
     while p.poll() is None:
        msg = p.stdout.readline().split()
        if msg:
@@ -198,9 +208,9 @@ def show_image():
     if is_running == True:
         return
     else:
-        shutil.copyfile('progress.png', 'progress_done.png')
+        shutil.copyfile(progress, progress_done)
         master_frame.pack()
-        im = Image.open('progress_done.png')
+        im = Image.open(progress_done)
         global h
         global w
         h = im.size[1]
@@ -212,7 +222,7 @@ def show_image():
         canvas = Canvas(image_window, width=w, height=h)
         global img
         global image_container
-        img = PhotoImage(file="progress_done.png")
+        img = PhotoImage(file=progress_done)
         image_container = canvas.create_image(0,0, anchor="nw",image=img)
         canvas.pack()
         updater()   
@@ -226,7 +236,7 @@ def refresh_image():
     if runThread.is_alive():
         is_running = True
         try:
-            im = Image.open('progress.png')
+            im = Image.open(progress)
             global h
             global w
             if h != im.size[1] or w != im.size[0]:
@@ -247,13 +257,13 @@ def refresh_image():
     else:
         is_running = False
         try:
-            shutil.copyfile('progress.png', 'progress_done.png')
-            im = Image.open('progress_done.png')
+            shutil.copyfile(progress, progress_done)
+            im = Image.open(progress_done)
             if h != im.size[1] or w != im.size[0]:
                 h = im.size[1]
                 w = im.size[0]
                 image_window.config(width=w, height=h)
-            img = PhotoImage(file="progress_done.png")
+            img = PhotoImage(file=progress_done)
             canvas.config(width=w, height=h)
             canvas.itemconfig(image_container, image = img)
             canvas.pack()
