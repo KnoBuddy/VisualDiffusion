@@ -24,6 +24,11 @@ conda activate progrockdiffusion
 cd progrockdiffusion
 python3 prdgui.py
 ```
+## Open the GUI
+
+Open up a command line window (shell) and activate the conda environment like normal, and then run prdgui.py, from within the progrockdiffusion folder (NOT FROM WITHIN THE VISUAL DIFFUSION FOLDER).
+Please read the [settings file](SETTINGS.md) if you are unfamiliar with PRD.
+
 ## Tips
 You can add as many prompts as you please all with different weights. The "Save Settings" button saves the settings to gui_settings.json.
 Make sure you select at least one CLIP Model. I also recommend naming your batch. 
@@ -33,9 +38,3 @@ The final text box is for extra shell arguments. They will be parsed after the i
 ```
 python prd.py -s gui_settings.json <YOUR ARGS GO HERE>
 ```
-
-## Open the GUI
-
-Open up a command line window (shell) and activate the conda environment like normal, and then run prdgui.py, from within the progrockdiffusion folder (NOT FROM WITHIN THE VISUAL DIFFUSION FOLDER).
-Please read the [settings file](SETTINGS.md) if you are unfamiliar with PRD.
-
