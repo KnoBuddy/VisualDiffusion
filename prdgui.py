@@ -1,3 +1,25 @@
+# -*- coding: utf-8 -*-
+
+"""
+VisualDiffusion, a GUI for running ProgRock Diffusion, by Kyle Steveson (KnoBuddy)
+It is dependent upon ProgRock Diffusion being installed. Many thanks to everyone that has contributed to the works here.
+--
+ProgRock Diffusion
+Command line version of Disco Diffusion (v5 Alpha) adapted for command line by Jason Hough (and friends!)
+--
+Original file is located at
+    https://colab.research.google.com/drive/1QGCyDlYneIvv1zFXngfOCCoSUKC6j1ZP
+Original notebook by Katherine Crowson (https://github.com/crowsonkb, https://twitter.com/RiversHaveWings). It uses either OpenAI's 256x256 unconditional ImageNet or Katherine Crowson's fine-tuned 512x512 diffusion model (https://github.com/openai/guided-diffusion), together with CLIP (https://github.com/openai/CLIP) to connect text prompts with images.
+Modified by Daniel Russell (https://github.com/russelldc, https://twitter.com/danielrussruss) to include (hopefully) optimal params for quick generations in 15-100 timesteps rather than 1000, as well as more robust augmentations.
+Further improvements from Dango233 and nsheppard helped improve the quality of diffusion in general, and especially so for shorter runs like this notebook aims to achieve.
+Vark added code to load in multiple Clip models at once, which all prompts are evaluated against, which may greatly improve accuracy.
+The latest zoom, pan, rotation, and keyframes features were taken from Chigozie Nri's VQGAN Zoom Notebook (https://github.com/chigozienri, https://twitter.com/chigozienri)
+Advanced DangoCutn Cutout method is also from Dango223.
+Somnai (https://twitter.com/Somnai_dreams) added Diffusion Animation techniques, QoL improvements and various implementations of tech and techniques, mostly listed in the changelog below.
+Pixel art models by u/Kaliyuga_ai
+Comic faces model by alex_spirin
+"""
+
 from tkinter import *
 import sys
 import os
@@ -9,7 +31,8 @@ import subprocess
 from time import *
 from PIL import Image
 
-path = os.path.dirname(os.getcwd())
+
+# File Names
 gui_settings = 'gui_settings.json'
 default_settings = 'settings.json'
 progress = 'progress.png'
@@ -18,7 +41,7 @@ prd = 'prd.py'
 
 default_prompt = ["A beautiful painting of a Castle in the Scottish Highlands, underexposed and overcast:1", "by Banksy, Beeple, and Bob Ross:0.75", "trending on ArtStation, vibrant:0.5", "bokeh, blur, dof, depth of field:-1"]
 
-
+# Load Settings from JSON
 if os.path.exists(gui_settings):
     try:
         json_set = json.load(open(gui_settings))
@@ -33,10 +56,12 @@ else:
     print("Default settings loaded")
 
     
-
+# First Run Check Variables
 is_running = False
 has_run = False
 
+
+#Auto Scrolling Shell Text box class
 class Redirect():
 
     def __init__(self, widget, autoscroll=True):
@@ -47,11 +72,11 @@ class Redirect():
         self.widget.insert('end', text)
         if self.autoscroll:
             self.widget.see("end")  # autoscroll
-        
+
     def flush(self):
         pass
 
-
+# Various Funtions Get Values/Prompts from JSON
 def get_num(derp):
     num = IntVar()
     num.set(json_set[derp])
@@ -81,8 +106,9 @@ def get_prompt_step(x):
     except:
         return ''
 
-path = './'
-
+# Function to Save all JSON Variables to File
+# I feel like there is a better way to do this by defining all the variables in the JSON file
+# and loop through them, but I'm not sure how to do it and this works.
 def save_text():
     x = batch_name_text.get()
     json_set['batch_name'] = x
@@ -138,6 +164,18 @@ def save_text():
     json_set['symmetry_loss_h'] = x
     x = symm_switch_text.get()
     json_set['symm_switch'] = x
+    x = cut_overview_text.get()
+    json_set['cut_overview'] = x
+    x = cut_innercut_text.get()
+    json_set['cut_innercut'] = x
+    x = cutn_batches_text.get()
+    json_set['cutn_batches'] = int(x)
+    x = cut_ic_pow_text.get()
+    json_set['cut_ic_pow'] = x
+    x = cut_heatmaps_text.get()
+    json_set['cut_heatmaps'] = x
+    x = fix_brightness_contrast_text.get()
+    json_set['fix_brightness_contrast'] = float(x)
     x = init_image_text.get()
     if not x:
         json_set['init_image'] = None
@@ -147,6 +185,9 @@ def save_text():
         json_set['init_image'] = x
     x = extra_args_text.get()
     json_set['extra_args'] = x
+    # Prompts are a bit more complex. They have nested dictionaries, and listed.
+    # I started to allow for prompt scheduling, which is why there is two levels of nesting here
+    # But I haven't gotten around to it yet.
     global prompt_text_box
     try:
         for i in range(len(prompt_text_box)):
@@ -171,6 +212,8 @@ def save_text():
     with open(gui_settings, "w+", encoding="utf-8") as outfile:
         json.dump(json_set, outfile, ensure_ascii=False, indent=4)
 
+
+# Function to start the thread to allow the GUI to update PRD is running
 def run_thread():
     if has_run == False:
         show_image()
@@ -183,6 +226,8 @@ def run_thread():
     else:
         print("Already running")
 
+
+# Run PRD and run the thread to update the GUI
 def do_run():
     global is_running
     p = subprocess.Popen(shlex.split('python prd.py -s '+gui_settings+' '+extra_args_text.get()), stdout=subprocess.PIPE, text=True)
@@ -204,6 +249,11 @@ def do_run():
     # Alternative method to run PRD
     # os.system('python prd.py -s gui_settings.json '+extra_args_text.get())
 
+
+# Function to show the finished image from the run before or,
+# if the run has not finished, the last image that was shown, or
+# creates an empty image if no image has been shown yet.
+# Runs Updater thread
 def show_image():
     if is_running == True:
         return
@@ -232,9 +282,12 @@ def show_image():
         canvas.pack()
         updater()   
 
+# Simple 1 second update interval for the GUI
 def updater():
     window.after(1000, refresh_image)
 
+
+# Function to refresh the image in the GUI
 def refresh_image():
     global is_running
     updater()
@@ -274,6 +327,15 @@ def refresh_image():
             canvas.pack()
         except:
             pass
+
+# All the frames, buttons, and text boxes for the GUI
+# The frames (left and right) are all packed into the master frame
+# The buttons and text boxes are all packed into the left frame
+# The image is show in the right frame
+
+# I would like to look into ways of organizing code like this better, but I need to see examples
+# of how to do it. To me it seems that if you have to deliberately create each object,
+# then I don't know how you'd reduce the length or clean it up.
 
 window = Tk()
 
@@ -315,6 +377,7 @@ frame3_sub2.grid(row=1, column=0, sticky=NSEW)
 
 # Text Prompts
 
+# Declare the variables for the text prompts
 current_step = '0'
 derp = 0
 prompt_text_box_label = {}
@@ -323,6 +386,8 @@ prompt_text_box = {}
 prompt_text_box['0'] = {}
 prompt_text = json_set['text_prompts']
 
+
+# Get the text prompts from the json file and put them in the GUI
 def get_prompts():
     global prompt_text
     prompt_text = json_set['text_prompts']
@@ -335,11 +400,10 @@ def get_prompts():
             if j != "" or '' or None:
                 prompt_text_box[x][i] = Entry(frame3_sub2, textvariable=get_prompt(x, i), width=150)
                 prompt_text_box[x][i].pack(anchor=NW, padx=2, pady=5)
-            
-
 
 get_prompts()
 
+# When the New Prompt button is clicked, a new prompt text box is created and labeled with the next number
 def new_prompt():
     global prompt_text
     global current_step
@@ -351,10 +415,15 @@ def new_prompt():
     prompt_text_box[current_step][derp].pack(anchor=NW, padx=2, pady=5)
 
 
-
+# Create a button that when clicked runs the new_prompt function
 new_prompt_button = Button(frame3_sub1, text="New Prompt", command=new_prompt)
 new_prompt_button.grid(row=0, column=0, sticky=NW)
 
+# Create buttons for Saving and Running PRD
+save = Button(frame2_sub1,text='Save Settings', command=save_text).grid(row=4, column=11, pady=5, padx=2)
+run = Button(frame2_sub1,text='Run', command=run_thread).grid(row=5, column=11, pady=5, padx=2)
+
+# The rest of the settings...
 steps = Label(frame1, text='Steps:')
 steps.grid(row=1, column=0, pady=5, padx=2, sticky=NW)
 
@@ -391,6 +460,76 @@ eta.grid(row=3, column=0, pady=5, padx=2, sticky=NW)
 eta_text = Entry(frame1, textvariable=get_text('eta'), width=8)
 eta_text.grid(row=3, column=1, pady=5, padx=2, sticky=NW)
 
+batch_name = Label(frame1, text='Batch Name:')
+batch_name.grid(row=2, column=4, pady=5, padx=2, sticky=NW)
+
+batch_name_text = Entry(frame1, textvariable=get_text('batch_name'), width=10)
+batch_name_text.grid(row=2, column=5, pady=5, padx=2, sticky=NW)
+
+n_batches = Label(frame1, text='Number of Batches:')
+n_batches.grid(row=3, column=4, pady=5, padx=2, sticky=NW)
+
+n_batches_text = Entry(frame1, textvariable=get_text('n_batches'), width=12)
+n_batches_text.grid(row=3, column=5, pady=5, padx=2, sticky=NW)
+
+init_image = Label(frame1, text='Init Image:')
+init_image.grid(row=3, column=6, pady=5, padx=2, sticky=NW)
+
+init_image_text = Entry(frame1, textvariable=get_text('init_image'), width=48)
+init_image_text.grid(row=3, column=7, pady=5, padx=2, sticky=NW)
+
+diffusion_model = Label(frame1, text='Diffusion Model:')
+diffusion_model.grid(row=1, column=6, pady=5, padx=2, sticky=NW)
+
+set_seed = Label(frame1, text='Set Seed:')
+set_seed.grid(row=3, column=2, pady=5, padx=2, sticky=NW)
+
+set_seed_text = Entry(frame1, textvariable=get_text('set_seed'), width=12)
+set_seed_text.grid(row=3, column=3, pady=5, padx=2, sticky=NW)
+
+symm_loss_scale = Label(frame2_sub1, text='Symmetry Scale:')
+symm_loss_scale.grid(row=5, column=9, pady=5, padx=2, sticky=NW)
+
+symm_loss_scale_text = Entry(frame2_sub1, textvariable=get_text('symm_loss_scale'), width=12)
+symm_loss_scale_text.grid(row=5, column=10, pady=5, padx=2, sticky=NW)
+
+symm_switch = Label(frame2_sub1, text='Symmetry Switch:')
+symm_switch.grid(row=4, column=9, pady=5, padx=2, sticky=NW)
+
+symm_switch_text = Entry(frame2_sub1, textvariable=get_text('symm_switch'), width=12)
+symm_switch_text.grid(row=4, column=10, pady=5, padx=2, sticky=NW)
+
+cutn_batches = Label(frame2_sub2, text='CutN Batches:')
+cutn_batches.grid(row=0, column=3, pady=5, padx=2, sticky=NW)
+
+cutn_batches_text = Entry(frame2_sub2, textvariable=get_text('cutn_batches'), width=20)
+cutn_batches_text.grid(row=0, column=4, pady=5, padx=2, sticky=NW)
+
+cut_overview = Label(frame2_sub2, text='Cut Overview:')
+cut_overview.grid(row=0, column=1, pady=5, padx=2, sticky=NW)
+
+cut_overview_text = Entry(frame2_sub2, textvariable=get_text('cut_overview'), width=20)
+cut_overview_text.grid(row=0, column=2, pady=5, padx=2, sticky=NW)
+
+cut_innercut = Label(frame2_sub2, text='Cut Inner Cut:')
+cut_innercut.grid(row=1, column=1, pady=5, padx=2, sticky=NW)
+
+cut_innercut_text = Entry(frame2_sub2, textvariable=get_text('cut_innercut'), width=20)
+cut_innercut_text.grid(row=1, column=2, pady=5, padx=2, sticky=NW)
+
+cut_ic_pow = Label(frame2_sub2, text='Cut IC Power:')
+cut_ic_pow.grid(row=1, column=3, pady=5, padx=2, sticky=NW)
+
+cut_ic_pow_text = Entry(frame2_sub2, textvariable=get_text('cut_ic_pow'), width=20)
+cut_ic_pow_text.grid(row=1, column=4, pady=5, padx=2, sticky=NW)
+
+extra_args = Label(frame2_sub2, text='Extra Args: (Advanced use only. Ex: --gobig)')
+extra_args.grid(row=0, column=0, pady=5, padx=2, sticky=NW)
+
+extra_args_text = Entry(frame2_sub2, textvariable=get_text('extra_args'), width=50)
+extra_args_text.grid(row=1, column=0, pady=5, padx=2, sticky=NW)
+
+# Checkboxes for various settings
 use_secondary_model_text = get_num('use_secondary_model')
 use_secondary_model = Checkbutton(frame2_sub1, text='Use Secondary Model', variable=use_secondary_model_text)
 use_secondary_model.grid(row=5, column=4, pady=5, padx=2, sticky=NW)
@@ -474,27 +613,6 @@ sampling_mode_text = get_text('sampling_mode')
 sampling_mode_drop = OptionMenu(frame1, sampling_mode_text, 'ddim', 'plms')
 sampling_mode_drop.grid(row=2, column=7, pady=5, padx=2, sticky=NW)
 
-batch_name = Label(frame1, text='Batch Name:')
-batch_name.grid(row=2, column=4, pady=5, padx=2, sticky=NW)
-
-batch_name_text = Entry(frame1, textvariable=get_text('batch_name'), width=10)
-batch_name_text.grid(row=2, column=5, pady=5, padx=2, sticky=NW)
-
-n_batches = Label(frame1, text='Number of Batches:')
-n_batches.grid(row=3, column=4, pady=5, padx=2, sticky=NW)
-
-n_batches_text = Entry(frame1, textvariable=get_text('n_batches'), width=12)
-n_batches_text.grid(row=3, column=5, pady=5, padx=2, sticky=NW)
-
-init_image = Label(frame1, text='Init Image:')
-init_image.grid(row=3, column=6, pady=5, padx=2, sticky=NW)
-
-init_image_text = Entry(frame1, textvariable=get_text('init_image'), width=48)
-init_image_text.grid(row=3, column=7, pady=5, padx=2, sticky=NW)
-
-diffusion_model = Label(frame1, text='Diffusion Model:')
-diffusion_model.grid(row=1, column=6, pady=5, padx=2, sticky=NW)
-
 diffusion_model_text = get_text('diffusion_model')
 diffusion_model_drop = OptionMenu(
     frame1, diffusion_model_text, '512x512_diffusion_uncond_finetune_008100',
@@ -504,12 +622,6 @@ diffusion_model_drop = OptionMenu(
     'watercolordiffusion_2', 'PulpSciFiDiffusion',
     'FeiArt_Handpainted_CG_Diffusion', 'IsometricDiffusionRevrart512px')
 diffusion_model_drop.grid(row=1, column=7, pady=5, padx=2, sticky=NW)
-
-set_seed = Label(frame1, text='Set Seed:')
-set_seed.grid(row=3, column=2, pady=5, padx=2, sticky=NW)
-
-set_seed_text = Entry(frame1, textvariable=get_text('set_seed'), width=12)
-set_seed_text.grid(row=3, column=3, pady=5, padx=2, sticky=NW)
 
 symmetry_loss_v_text = get_num('symmetry_loss_v')
 symmetry_loss_v_check = Checkbutton(frame2_sub1, text='Vertical Symmetry', variable=symmetry_loss_v_text)
@@ -527,27 +639,23 @@ else:
     symmetry_loss_h_check.deselect()
 symmetry_loss_h_check.grid(row=5, column=8, pady=5, padx=2, sticky=NW)
 
-symm_loss_scale = Label(frame2_sub1, text='Symmetry Scale:')
-symm_loss_scale.grid(row=5, column=9, pady=5, padx=2, sticky=NW)
+cut_heatmaps_text = get_num('cut_heatmaps')
+cut_heatmaps_check = Checkbutton(frame2_sub2, text='Cut Heatmaps', variable=cut_heatmaps_text)
+if cut_heatmaps_text.get() == 1:
+    cut_heatmaps_check.select()
+else:
+    cut_heatmaps_check.deselect()
+cut_heatmaps_check.grid(row=0, column=6, pady=5, padx=2, sticky=NW)
 
-symm_loss_scale_text = Entry(frame2_sub1, textvariable=get_text('symm_loss_scale'), width=12)
-symm_loss_scale_text.grid(row=5, column=10, pady=5, padx=2, sticky=NW)
+fix_brightness_contrast_text = get_num('fix_brightness_contrast')
+fix_brightness_contrast_check = Checkbutton(frame2_sub2, text='Fix Brightness Contrast', variable=fix_brightness_contrast_text)
+if fix_brightness_contrast_text.get() == 1:
+    fix_brightness_contrast_check.select()
+else:
+    fix_brightness_contrast_check.deselect()
+fix_brightness_contrast_check.grid(row=1, column=6, pady=5, padx=2, sticky=NW)
 
-symm_switch = Label(frame2_sub1, text='Symmetry Switch:')
-symm_switch.grid(row=4, column=9, pady=5, padx=2, sticky=NW)
-
-symm_switch_text = Entry(frame2_sub1, textvariable=get_text('symm_switch'), width=12)
-symm_switch_text.grid(row=4, column=10, pady=5, padx=2, sticky=NW)
-
-extra_args = Label(frame2_sub2, text='Extra Args: (Advanced use only. Ex: --gobig)')
-extra_args.grid(row=9, column=0, pady=5, padx=2, sticky=NW)
-
-extra_args_text = Entry(frame2_sub2, textvariable=get_text('extra_args'), width=150)
-extra_args_text.grid(row=10, column=0, pady=5, padx=2, sticky=NW)
-
-save = Button(frame2_sub1,text='Save Settings', command=save_text).grid(row=4, column=11, pady=5, padx=2)
-run = Button(frame2_sub1,text='Run', command=run_thread).grid(row=5, column=11, pady=5, padx=2)
-
+# Create scrolling text output from the shell
 frame = Frame(left_frame2, height=150)
 frame.pack_propagate(0)
 frame.pack(expand=True, fill='both')
