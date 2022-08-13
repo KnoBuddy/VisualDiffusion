@@ -1,6 +1,8 @@
 # VisualDiffusion
 A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Notebooks.
 
+If you would like support me, the development of this GUI, or maybe you have a feature that you desperately want added, please consider supporting me and this program's development on my [Patreon](https://www.patreon.com/knobuddy).
+
 ![image](https://user-images.githubusercontent.com/64171756/184508953-2c790ea0-c86b-4169-8ab9-061b0dae4e90.png)
 
 # Instructions for updating VisualDiffusion
