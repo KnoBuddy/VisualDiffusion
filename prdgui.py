@@ -672,7 +672,7 @@ scrollbar['command'] = text.yview
 old_stdout = sys.stdout    
 sys.stdout = Redirect(text)
 
-window.title('VisualDiffusion (PRD GUI): '+json_set['batch_name'])
+window.title('VisualDiffusion (a GUI for ProgRock Diffusion): '+json_set['batch_name'])
 
 window.mainloop()
 
