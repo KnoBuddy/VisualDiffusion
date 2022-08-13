@@ -39,7 +39,7 @@ Please read the [settings file](SETTINGS.md) if you are unfamiliar with PRD.
 
 ## Tips
 You can add as many prompts as you please all with different weights. The "Save Settings" button saves the settings to gui_settings.json.
-Make sure you select at least one CLIP Model. I also recommend naming your batch. 
+Make sure you select at least one CLIP Model, as well as all the text boxes having an appropriate value, some can be left empty. I also recommend naming your batch. 
 If you need to cancel the render, you will have to kill the shell window you used to open the GUI.
 
 The final text box is for extra shell arguments. They will be parsed after the initial command:
