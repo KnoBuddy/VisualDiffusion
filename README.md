@@ -3,7 +3,12 @@ A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Noteboo
 
 ![image](https://user-images.githubusercontent.com/64171756/184454721-59578536-06a6-425d-b817-3755f7c977a6.png)
 
-# Instructions for progrockdiffusion
+# Instructions for updating VisualDiffusion
+```cd progrockdiffusion\visualdiffusion
+git pull
+```
+
+# Instructions for using VisualDiffusion with progrockdiffusion
 
 ## Install PRD
 
