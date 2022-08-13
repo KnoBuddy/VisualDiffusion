@@ -208,7 +208,12 @@ def show_image():
     if is_running == True:
         return
     else:
-        shutil.copyfile(progress, progress_done)
+        try:
+            shutil.copyfile(progress, progress_done)
+        except:
+            image = Image.new('RGB', (512, 512), (255, 255, 255))
+            image.save(progress)
+            image.save(progress_done)
         master_frame.pack()
         im = Image.open(progress_done)
         global h
