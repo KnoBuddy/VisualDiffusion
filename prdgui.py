@@ -121,10 +121,7 @@ def save_text():
     x = width_text.get()
     json_set['width'] = int(x)
     x = clip_guidance_scale_text.get()
-    if x != 'auto':
-        json_set['clip_guidance_scale'] = int(x)
-    else:
-        json_set['clip_guidance_scale'] = x
+    json_set['clip_guidance_scale'] = x
     x = skip_steps_text.get()
     json_set['skip_steps'] = int(x)
     x = use_secondary_model_text.get()
