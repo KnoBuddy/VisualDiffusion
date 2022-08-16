@@ -79,6 +79,51 @@ class Redirect():
 
     def flush(self):
         pass
+    
+
+def run_thread():
+    global is_running
+    global has_run
+    if is_running == False:
+        is_running = True
+        has_run = True
+        global thread
+        thread = threading.Thread(target=do_run)
+        thread.start()
+    else:
+        print("Already Running")
+
+def do_run():
+    global is_running
+    global has_run
+    global thread
+    global json_set
+    global gui_settings
+    global default_settings
+    global progress
+    global progress_done
+    global prd
+    # Save Settings to JSON
+    save_settings_file()
+    # Run PRD
+    try:
+        print("Running PRD...", file = sys.stdout)
+        prd_cmd = "python3 " + prd + " " + gui_settings
+        #print("Command: " + prd_cmd, file = sys.stdout)
+        prd_args = shlex.split(prd_cmd)
+        #print("Args: " + prd_args, file = sys.stdout)
+        p = subprocess.Popen(shlex.split('python prd.py -s '+gui_settings), stdout=subprocess.PIPE, text=True)
+        updater()
+        while p.poll() is None:
+            line = p.stdout.readline()
+            line = line.strip()
+            if line:
+                print(line, file = sys.stdout)
+    except:
+        print("Error running PRD", file = sys.stdout)
+        is_running = False
+        thread = None
+        
 
 def show_image():
     if is_running == True:
@@ -153,50 +198,6 @@ def refresh_image():
             canvas.pack()
         except:
             pass
-
-
-def run_thread():
-    global is_running
-    global has_run
-    if is_running == False:
-        is_running = True
-        has_run = True
-        global thread
-        thread = threading.Thread(target=do_run)
-        thread.start()
-    else:
-        print("Already Running")
-
-def do_run():
-    global is_running
-    global has_run
-    global thread
-    global json_set
-    global gui_settings
-    global default_settings
-    global progress
-    global progress_done
-    global prd
-    # Save Settings to JSON
-    save_settings_file()
-    # Run PRD
-    try:
-        print("Running PRD...", file = sys.stdout)
-        prd_cmd = "python3 " + prd + " " + gui_settings
-        #print("Command: " + prd_cmd, file = sys.stdout)
-        prd_args = shlex.split(prd_cmd)
-        #print("Args: " + prd_args, file = sys.stdout)
-        p = subprocess.Popen(shlex.split('python prd.py -s '+gui_settings), stdout=subprocess.PIPE, text=True)
-        updater()
-        while p.poll() is None:
-            line = p.stdout.readline()
-            line = line.strip()
-            if line:
-                print(line, file = sys.stdout)
-    except:
-        print("Error running PRD", file = sys.stdout)
-        is_running = False
-        thread = None
 
 def stop_thread():
     global is_running
