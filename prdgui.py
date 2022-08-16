@@ -740,19 +740,19 @@ n_batches_entry.grid(row=1, column=5, sticky=NW, padx=5, pady=2)
 
 # Fix Brightness Contrast
 fix_brightness_contrast = BooleanVar()
-fix_brightness_contrast.set(json_set['fix_brightness_contrast'])
+fix_brightness_contrast.set(bool(json_set['fix_brightness_contrast']))
 fix_brightness_contrast_check = ttk.Checkbutton(advanced_settings_frame, text="Fix Brightness Contrast", variable=fix_brightness_contrast)
 fix_brightness_contrast_check.grid(row=0, column=6, sticky=NW, padx=5, pady=2)
 
 # Cut Heatmaps
 cut_heatmaps = BooleanVar()
-cut_heatmaps.set(json_set['cut_heatmaps'])
+cut_heatmaps.set(bool(json_set['cut_heatmaps']))
 cut_heatmaps_check = ttk.Checkbutton(advanced_settings_frame, text="Cut Heatmaps", variable=cut_heatmaps)
 cut_heatmaps_check.grid(row=1, column=6, sticky=NW, padx=5, pady=2)
 
 # Smooth Schedules
 smooth_schedules = BooleanVar()
-smooth_schedules.set(json_set['smooth_schedules'])
+smooth_schedules.set(bool(json_set['smooth_schedules']))
 smooth_schedules_check = ttk.Checkbutton(advanced_settings_frame, text="Smooth Schedules", variable=smooth_schedules)
 smooth_schedules_check.grid(row=2, column=6, sticky=NW, padx=5, pady=2)
 
