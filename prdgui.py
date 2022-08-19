@@ -1199,6 +1199,7 @@ def show_prompt_step(step):
 get_prompts()
 updater()
 fix_text()
+show_image()
 
 # Run Frame
 # Create scrolling text output from the shell
