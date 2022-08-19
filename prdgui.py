@@ -1049,7 +1049,7 @@ def get_prompts():
     global prompts_frame
     global prompt_step_button
     global new_prompt_button
-    # global new_step_button
+    global new_step_button
     set_prompt_text()
     prompts_frame = ttk.Frame(text_prompts_frame)
     prompts_frame.pack(side=TOP, fill=X, expand=True)
@@ -1057,11 +1057,11 @@ def get_prompts():
     prompts_frame_top.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
     new_prompt_button = ttk.Button(prompts_frame_top, text="New Prompt", command=new_prompt)
     new_prompt_button.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
-    #new_step_button = ttk.Button(prompts_frame_top, text="New Step", command=lambda: new_step(new_step_text.get()))
-    #new_step_button.grid(row=0, column=1, sticky=NW, padx=5, pady=2)
-    #new_step_text = StringVar()
-    #new_step_entry = ttk.Entry(prompts_frame_top, textvariable=new_step_text, width=20)
-    #new_step_entry.grid(row=0, column=2, sticky=NW, padx=5, pady=2)
+    new_step_button = ttk.Button(prompts_frame_top, text="New Step", command=lambda: new_step(new_step_text.get()))
+    new_step_button.grid(row=0, column=1, sticky=NW, padx=5, pady=2)
+    new_step_text = StringVar()
+    new_step_entry = ttk.Entry(prompts_frame_top, textvariable=new_step_text, width=20)
+    new_step_entry.grid(row=0, column=2, sticky=NW, padx=5, pady=2)
     if prompt_scheduling == True:
         prompt_steps = list(prompt_text.keys())
         prompt_steps_frame = {}
@@ -1118,7 +1118,7 @@ def new_prompt():
         prompt_text_box_label[len(prompt_text_vars)-1].pack(side=TOP, anchor=NW, padx=5, pady=2)
         prompt_text_entry[len(prompt_text_vars)-1] = Entry(prompt_steps_frame['0'], textvariable=prompt_text_vars[len(prompt_text_vars)-1], width=150)
         prompt_text_entry[len(prompt_text_vars)-1].pack(side=TOP, padx=5, pady=2)
-'''
+
 def new_step(step):
     global prompt_text_vars
     global prompt_text_entry
@@ -1127,22 +1127,23 @@ def new_step(step):
     global prompt_steps_frame
     global current_step
     global prompt_steps
+    global prompt_scheduling
+    global json_set
+    prompt_step_button = {}
+    if prompt_scheduling == False:
+        temp = []
+        print(prompt_text_vars)
+        for i in prompt_text_vars:
+            temp.append(prompt_text_vars[i].get())
+            json_set['text_prompts']['0'] = temp
     prompt_steps.append(str(len(prompt_steps)))
-    prompt_text_vars[str(len(prompt_steps))] = {}
-    prompt_text_entry[str(len(prompt_steps))] = {}
-    prompt_text_box_label[str(len(prompt_steps))] = {}
-    prompt_step_button[str(len(prompt_steps))] = ttk.Button(text_prompts_button_frame, text="Step " + str(step), command=lambda k=str(len(prompt_steps)): show_prompt_step(k))
-    prompt_step_button[str(len(prompt_steps))].pack(side=LEFT, padx=5, pady=2)
-    prompt_steps_frame[str(len(prompt_steps))] = ttk.Frame(prompts_frame)
-    prompt_steps_frame[str(len(prompt_steps))].grid(row=1, column=0, sticky=NW, padx=5, pady=2)
-    prompt_text_vars[str(len(prompt_steps))][0] = StringVar()
-    prompt_text_vars[str(len(prompt_steps))][0].set('')
-    prompt_text_box_label[str(len(prompt_steps))][0] = ttk.Label(prompt_steps_frame[str(len(prompt_steps))], text="Prompt 1")
-    prompt_text_box_label[str(len(prompt_steps))][0].pack(side=TOP, anchor=NW, padx=5, pady=2)
-    prompt_text_entry[str(len(prompt_steps))][0] = Entry(prompt_steps_frame[str(len(prompt_steps))], textvariable=prompt_text_vars[str(len(prompt_steps))][0], width=150)
-    prompt_text_entry[str(len(prompt_steps))][0].pack(side=TOP, padx=5, pady=2)
+    json_set['text_prompts']['0'] = {"0": temp, str(step): [" "]}
+    prompt_text_vars = {}
+    prompt_text_entry = {}
+    prompt_text_box_label= {}
+    get_prompts()
     show_prompt_step(str(len(prompt_steps)))
-'''
+
 
 def cleanup():
     # Delete the old UI elements and frames
@@ -1157,7 +1158,7 @@ def cleanup():
     global prompt_text
     global prompt_scheduling
     new_prompt_button.destroy()
-    # new_step_button.destroy()
+    new_step_button.destroy()
     prompt_text_vars = {}
     if prompt_scheduling == True:
         for k in prompt_steps:
