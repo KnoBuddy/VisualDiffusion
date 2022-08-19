@@ -30,6 +30,7 @@ import shutil
 import threading
 import shlex
 import subprocess
+import pathlib
 from time import *
 from PIL import Image
 from PIL import ImageTk
@@ -62,6 +63,7 @@ else:
 # First Run Check Variables
 is_running = False
 has_run = False
+interrupt = False
 
 args = list(json_set.keys())
 
@@ -162,28 +164,44 @@ def show_image():
 def refresh_image():
     global is_running
     updater()
-    if thread.is_alive():
-        is_running = True
-        try:
-            im = Image.open(progress)
-            global h
-            global w
-            if h != im.size[1] or w != im.size[0]:
-                h = im.size[1]
-                w = im.size[0]
-                image_window.config(width=w, height=h)
-            global img
-            global image_container
-            global canvas
-            img = PhotoImage(file="progress.png")
-            canvas.config(width=w, height=h)
-            canvas.itemconfig(image_container, image = img)
-            canvas.pack()
-            global has_run
-            has_run = True
-        except:
-            pass
-    else:
+    try:
+        if thread.is_alive():
+            is_running = True
+            try:
+                im = Image.open(progress)
+                global h
+                global w
+                if h != im.size[1] or w != im.size[0]:
+                    h = im.size[1]
+                    w = im.size[0]
+                    image_window.config(width=w, height=h)
+                global img
+                global image_container
+                global canvas
+                img = PhotoImage(file="progress.png")
+                canvas.config(width=w, height=h)
+                canvas.itemconfig(image_container, image = img)
+                canvas.pack()
+                global has_run
+                has_run = True
+            except:
+                pass
+        else:
+            is_running = False
+            try:
+                shutil.copyfile(progress, progress_done)
+                im = Image.open(progress_done)
+                if h != im.size[1] or w != im.size[0]:
+                    h = im.size[1]
+                    w = im.size[0]
+                    image_window.config(width=w, height=h)
+                img = PhotoImage(file=progress_done)
+                canvas.config(width=w, height=h)
+                canvas.itemconfig(image_container, image = img)
+                canvas.pack()
+            except:
+                pass
+    except:
         is_running = False
         try:
             shutil.copyfile(progress, progress_done)
@@ -215,6 +233,7 @@ def save_settings_file():
     global json_set
     global gui_settings
     # Save Settings to JSON
+    print(gui_settings)
     with open(gui_settings, 'w+', encoding='utf-8') as f:
         json.dump(json_set, f, ensure_ascii=False, indent=4)
     print("Settings saved", file = sys.stdout)
@@ -232,21 +251,32 @@ def save_as_settings_file():
         print("Settings saved", file = sys.stdout)
 
 def load_settings_file():
+    global interrupt
+    interrupt = True
+    cleanup()
     global json_set
     # Load Settings from JSON
     filename = filedialog.askopenfilename(initialdir = "./",title = "Select file",filetypes = (("json files","*.json"),("all files","*.*")))
     global gui_settings
-    gui_settings = filename
-    print("Settings loaded "+gui_settings, file = sys.stdout)
+    global prompt_text
+    gui_settings = os.path.basename(filename)
     if filename:
         try:
             json_set = json.load(open(filename))
+            print(filename+' just a test')
             print("Settings loaded", file = sys.stdout)
+            print("Settings loaded from: "+gui_settings, file = sys.stdout)
+            prompt_text = json_set['text_prompts']['0']
         except:
             print("Error loading settings file", file = sys.stdout)
             print("Loading from Defaults...", file = sys.stdout)
             json_set = json.load(open(default_settings))
+    interrupt = False
+    set_prompt_text()
     refresh()
+    get_prompts()
+    fix_text()
+    updater()
 
 def open_image_file():
     global json_set
@@ -274,23 +304,37 @@ def show_advanced_settings():
         clip_model_frame.pack_forget()
         symmetry_frame.pack_forget()
     else:
-        advanced_settings_frame.pack(fill=BOTH, expand=1, padx=2, pady=2)
+        advanced_settings_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
 
 def show_clip_settings():
     if clip_model_frame.winfo_viewable():
         clip_model_frame.pack_forget()
     else:
-        clip_model_frame.pack(fill=BOTH, expand=1, padx=2, pady=2)
+        clip_model_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
 
 def show_symmetry_settings():
     if symmetry_frame.winfo_viewable():
         symmetry_frame.pack_forget()
     else:
-        symmetry_frame.pack(fill=BOTH, expand=1, padx=2, pady=2)
+        symmetry_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
 
 def refresh():
     # Refresh GUI
     global json_set
+    global prompt_scheduling
+    global prompt_text
+    global prompt_text_vars
+    global prompt_steps
+    try:
+        if ['0'] in json_set['text_prompts']['0']:
+            prompt_scheduling = True
+            prompt_text = json_set['text_prompts']['0']
+            prompt_steps = list(prompt_text.keys())
+            print('Prompt Scheduling is enabled', file = sys.stdout)
+    except:
+        prompt_scheduling = False
+        prompt_text = json_set['text_prompts']['0']
+        print("Prompt Scheduling is disabled", file = sys.stdout)
     steps.set(json_set['steps'])
     steps_entry.configure(textvariable=steps)
     height.set(json_set['height'])
@@ -301,7 +345,11 @@ def refresh():
     sampling_mode_optionmenu.configure(textvariable=sampling_mode)
     diffusion_model.set(json_set['diffusion_model'])
     diffusion_model_optionmenu.configure(textvariable=diffusion_model)
-    simple_symmetry.set(json_set['simple_symmetry'])
+    
+    if json_set['simple_symmetry'] == False:
+        simple_symmetry.set(False)
+    else:
+        simple_symmetry.set(True)
     simple_symmetry_check.configure(variable=simple_symmetry)
     skip_steps.set(json_set['skip_steps'])
     skip_steps_entry.configure(textvariable=skip_steps)
@@ -323,67 +371,76 @@ def refresh():
     cutn_batches_entry.configure(textvariable=cutn_batches)
     n_batches.set(json_set['n_batches'])
     n_batches_entry.configure(textvariable=n_batches)
-    fix_brightness_contrast.set(json_set['fix_brightness_contrast'])
+    use_secondary_model.set(json_set['use_secondary_model'])
+    use_secondary_model_check.configure(variable=use_secondary_model)
+    fix_brightness_contrast.set(bool(json_set['fix_brightness_contrast']))
     fix_brightness_contrast_check.configure(variable=fix_brightness_contrast)
     cut_heatmaps.set(json_set['cut_heatmaps'])
     cut_heatmaps_check.configure(variable=cut_heatmaps)
     smooth_schedules.set(json_set['smooth_schedules'])
     smooth_schedules_check.configure(variable=smooth_schedules)
-    vitb16.set(json_set['ViTB16'])
+    vitb16.set(bool(json_set['ViTB16']))
     vitb16_check.configure(variable=vitb16)
-    vitb32.set(json_set['ViTB32'])
+    vitb32.set(bool(json_set['ViTB32']))
     vitb32_check.configure(variable=vitb32)
-    vitl14.set(json_set['ViTL14'])
+    vitl14.set(bool(json_set['ViTL14']))
     vitl14_check.configure(variable=vitl14)
-    vitl14_336.set(json_set['ViTL14_336'])
+    vitl14_336.set(bool(json_set['ViTL14_336']))
     vitl14_336_check.configure(variable=vitl14_336)
-    rn101.set(json_set['RN101'])
+    rn101.set(bool(json_set['RN101']))
     rn101_check.configure(variable=rn101)
-    rn50.set(json_set['RN50'])
+    rn50.set(bool(json_set['RN50']))
     rn50_check.configure(variable=rn50)
-    rn50x4.set(json_set['RN50x4'])
+    rn50x4.set(bool(json_set['RN50x4']))
     rn50x4_check.configure(variable=rn50x4)
-    rn50x16.set(json_set['RN50x16'])
+    rn50x16.set(bool(json_set['RN50x16']))
     rn50x16_check.configure(variable=rn50x16)
-    rn50x64.set(json_set['RN50x64'])
+    rn50x64.set(bool(json_set['RN50x64']))
     rn50x64_check.configure(variable=rn50x64)
-    vitb32_laion2b_e16.set(json_set['ViTB32_laion2b_e16'])
+    vitb32_laion2b_e16.set(bool(json_set['ViTB32_laion2b_e16']))
     vitb32_laion2b_e16_check.configure(variable=vitb32_laion2b_e16)
-    vitb32_laion400m_e31.set(json_set['ViTB32_laion400m_e31'])
+    vitb32_laion400m_e31.set(bool(json_set['ViTB32_laion400m_e31']))
     vitb32_laion400m_e31_check.configure(variable=vitb32_laion400m_e31)
-    vitb32_laion400m_32.set(json_set['ViTB32_laion400m_32'])
+    vitb32_laion400m_32.set(bool(json_set['ViTB32_laion400m_32']))
     vitb32_laion400m_32_check.configure(variable=vitb32_laion400m_32)
-    vitb32quickgelu_laion400m_e31.set(json_set['ViTB32quickgelu_laion400m_e31'])
+    vitb32quickgelu_laion400m_e31.set(bool(json_set['ViTB32quickgelu_laion400m_e31']))
     vitb32quickgelu_laion400m_e31_check.configure(variable=vitb32quickgelu_laion400m_e31)
-    vitb32quickgelu_laion400m_e32.set(json_set['ViTB32quickgelu_laion400m_e32'])
+    vitb32quickgelu_laion400m_e32.set(bool(json_set['ViTB32quickgelu_laion400m_e32']))
     vitb32quickgelu_laion400m_e32_check.configure(variable=vitb32quickgelu_laion400m_e32)
-    vitb16_laion400m_e31.set(json_set['ViTB16_laion400m_e31'])
+    vitb16_laion400m_e31.set(bool(json_set['ViTB16_laion400m_e31']))
     vitb16_laion400m_e31_check.configure(variable=vitb16_laion400m_e31)
-    vitb16_laion400m_e32.set(json_set['ViTB16_laion400m_e32'])
+    vitb16_laion400m_e32.set(bool(json_set['ViTB16_laion400m_e32']))
     vitb16_laion400m_e32_check.configure(variable=vitb16_laion400m_e32)
-    rn50_yffcc15m.set(json_set['RN50_yffcc15m'])
+    rn50_yffcc15m.set(bool(json_set['RN50_yffcc15m']))
     rn50_yffcc15m_check.configure(variable=rn50_yffcc15m)
-    rn50_cc12m.set(json_set['RN50_cc12m'])
+    rn50_cc12m.set(bool(json_set['RN50_cc12m']))
     rn50_cc12m_check.configure(variable=rn50_cc12m)
-    rn50_quickgelu_yfcc15m.set(json_set['RN50_quickgelu_yfcc15m'])
+    rn50_quickgelu_yfcc15m.set(bool(json_set['RN50_quickgelu_yfcc15m']))
     rn50_quickgelu_yfcc15m_check.configure(variable=rn50_quickgelu_yfcc15m)
-    rn50_quickgelu_yfcc15m.set(json_set['RN50_quickgelu_yfcc15m'])
+    rn50_quickgelu_yfcc15m.set(bool(json_set['RN50_quickgelu_yfcc15m']))
     rn50_quickgelu_cc12m_check.configure(variable=rn50_quickgelu_cc12m)
-    rn101_yfcc15m.set(json_set['RN101_yfcc15m'])
+    rn101_yfcc15m.set(bool(json_set['RN101_yfcc15m']))
     rn101_yfcc15m_check.configure(variable=rn101_yfcc15m)
-    rn101_quickgelu_yfcc15m.set(json_set['RN101_quickgelu_yfcc15m'])
+    rn101_quickgelu_yfcc15m.set(bool(json_set['RN101_quickgelu_yfcc15m']))
     rn101_quickgelu_yfcc15m_check.configure(variable=rn101_quickgelu_yfcc15m)
-    symm_loss_scale.set(json_set['symm_loss_scale'])
+    symm_loss_scale.set(str(json_set['symm_loss_scale']))
     symm_loss_scale_entry.configure(textvariable=symm_loss_scale)
-    symmetry_loss_v.set(json_set['symmetry_loss_v'])
+    symmetry_loss_v.set(str(json_set['symmetry_loss_v']))
     symmetry_loss_v_check.configure(textvariable=symmetry_loss_v)
-    symmetry_loss_h.set(json_set['symmetry_loss_h'])
+    symmetry_loss_h.set(str(json_set['symmetry_loss_h']))
     symmetry_loss_h_check.configure(textvariable=symmetry_loss_h)
-    symm_switch.set(json_set['symm_switch'])
+    symm_switch.set(str(json_set['symm_switch']))
     symm_switch_entry.configure(textvariable=symm_switch)
-
+    
+def fix_text():
+    if prompt_scheduling == True:
+        for i in prompt_steps:
+            show_prompt_step(i)
+            show_prompt_step('0')
 
 def updater():
+    if interrupt == True:
+        return
     global json_set
     window.title('VisualDiffusion (a GUI for ProgRock Diffusion): '+gui_settings)
     steps_text = int(steps_entry.get())
@@ -396,8 +453,6 @@ def updater():
     json_set['sampling_mode'] = sampling_mode_text
     diffusion_model_text = diffusion_model.get()
     json_set['diffusion_model'] = diffusion_model_text
-    simple_symmetry_text = bool(simple_symmetry.get())
-    json_set['simple_symmetry'] = simple_symmetry_text
     skip_steps_text = int(skip_steps_entry.get())
     json_set['skip_steps'] = skip_steps_text
     clip_guidance_scale_text = clip_guidance_scale_entry.get()
@@ -414,10 +469,12 @@ def updater():
     json_set['cut_innercut'] = cut_innercut_text
     cut_ic_pow_text = cut_ic_pow_entry.get()
     json_set['cut_ic_pow'] = cut_ic_pow_text
-    cutn_batches_text = cutn_batches_entry.get()
+    cutn_batches_text = int(cutn_batches_entry.get())
     json_set['cutn_batches'] = cutn_batches_text
-    n_batches_text = n_batches_entry.get()
+    n_batches_text = int(n_batches_entry.get())
     json_set['n_batches'] = n_batches_text
+    use_secondary_model_text = bool(use_secondary_model.get())
+    json_set['use_secondary_model'] = use_secondary_model_text
     fix_brightness_contrast_text = fix_brightness_contrast.get()
     json_set['fix_brightness_contrast'] = fix_brightness_contrast_text
     cut_heatmaps_text = cut_heatmaps.get()
@@ -476,7 +533,26 @@ def updater():
     json_set['symmetry_loss_h'] = symmetry_loss_h_text
     symm_switch_text = symm_switch_entry.get()
     json_set['symm_switch'] = symm_switch_text
-    window.after(1000, updater)
+    if prompt_scheduling == True:
+        text_prompts_button_frame.grid(row=0, column=0, sticky=NW)
+        for i in prompt_steps:
+            temp_prompts = []
+            for k in prompt_text_entry[i].keys():
+                prompt_text_entry_text = prompt_text_vars[i][k].get()
+                if prompt_text_entry_text != '':
+                    temp_prompts.append(prompt_text_entry_text)
+                json_set['text_prompts']['0'][i][k] = prompt_text_entry_text
+    else:
+        temp_prompts = []
+        t = 0
+        text_prompts_button_frame.pack_forget()
+        for i in prompt_text_entry.keys():
+            prompt_text_entry_text = prompt_text_vars[i].get()
+            if prompt_text_entry_text != '':
+                temp_prompts.append(prompt_text_entry_text)
+            json_set['text_prompts']['0'] = temp_prompts
+            t += 1
+    window.after(1000, refresh_image)
 
 # All the frames, buttons, and text boxes for the GUI
 # The frames (left and right) are all packed into the master frame
@@ -519,7 +595,7 @@ right_frame.pack(side=RIGHT, fill=BOTH, expand=1)
 # Left Frame
 # Top Frame
 basic_settings_frame = ttk.Frame(left_frame_top, style='Green.TFrame')
-basic_settings_frame.pack(fill=BOTH, expand=1, padx=2, pady=2)
+basic_settings_frame.pack(fill=BOTH,padx=2, pady=2)
 
 # Middle Top Frame
 advanced_settings_frame = ttk.Frame(left_frame_top, style='Yellow.TFrame')
@@ -531,26 +607,29 @@ clip_model_top_frame.pack(side=TOP, fill=BOTH, expand=1)
 clip_model_bottom_frame = ttk.Frame(clip_model_frame)
 clip_model_bottom_frame.pack(side=BOTTOM, fill=BOTH, expand=1)
 clip_settings_frame = ttk.Frame(clip_model_top_frame, style='Pink.TFrame')
-clip_settings_frame.pack(side=LEFT, fill=BOTH, expand=1, padx=2, pady=2)
+clip_settings_frame.pack(side=LEFT, fill=BOTH, padx=2, pady=2)
 other_settings_frame = ttk.Frame(clip_model_top_frame, style='Green.TFrame')
-other_settings_frame.pack(side=LEFT, fill=BOTH, expand=1, padx=2, pady=2)
+other_settings_frame.pack(side=LEFT, fill=BOTH, padx=2, pady=2)
 laion_settings_frame = ttk.Frame(clip_model_bottom_frame, style='Yellow.TFrame')
-laion_settings_frame.pack(side=BOTTOM, fill=BOTH, expand=1, padx=2, pady=2)
+laion_settings_frame.pack(side=BOTTOM, fill=BOTH, padx=2, pady=2)
 
 # Symmetry Frame
 symmetry_frame = ttk.Frame(left_frame_top, style='Yellow.TFrame')
 
 # Middle Bottom Frame
+left_frame_bottom_top = ttk.Frame(left_frame_bottom, style='Grey.TFrame')
+left_frame_bottom_top.pack(side=TOP, fill=BOTH, expand=1)
+text_prompts_button_frame = ttk.Frame(left_frame_bottom_top, style='Grey.TFrame')
+text_prompts_button_frame.grid(row=0, column=0, sticky=NW)
 text_prompts_frame = ttk.Frame(left_frame_bottom, style='TFrame')
-text_prompts_frame.pack(fill=BOTH, expand=1, padx=2, pady=2)
+text_prompts_frame.pack(side=TOP, expand=1, fill=BOTH, padx=2, pady=2)
 
 # Bottom Frame
 run_frame = ttk.Frame(left_frame_bottom, style='Grey.TFrame')
 run_frame.pack(fill=BOTH, expand=1, padx=2, pady=2)
-
 # Right Frame
 image_frame = ttk.Frame(right_frame)
-image_frame.pack(fill=BOTH, expand=1, padx=5, pady=2)
+image_frame.pack(fill=BOTH, expand=1, padx=2, pady=2)
 
 # Basic Settings Frame
 # Steps, Height, Width, Sampling Mode, Diffusion Model, 
@@ -608,7 +687,10 @@ diffusion_model_optionmenu.grid(row=1, column=3, sticky=NW, padx=5, pady=2)
 
 # Simple Symmetry
 simple_symmetry = BooleanVar()
-simple_symmetry.set(json_set['simple_symmetry'])
+if json_set['simple_symmetry'] == False:
+    simple_symmetry.set(False)
+else:
+    simple_symmetry.set(True)
 simple_symmetry_check = ttk.Checkbutton(basic_settings_frame, text="Simple Symmetry", variable=simple_symmetry)
 simple_symmetry_check.grid(row=2, column=2, sticky=NW, padx=5, pady=2)
 
@@ -679,7 +761,7 @@ set_seed = StringVar()
 set_seed.set(json_set['set_seed'])
 set_seed_label = ttk.Label(advanced_settings_frame, text="Set Seed")
 set_seed_label.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
-set_seed_entry = ttk.Entry(advanced_settings_frame, textvariable=set_seed, width=20)
+set_seed_entry = ttk.Entry(advanced_settings_frame, textvariable=set_seed, width=12)
 set_seed_entry.grid(row=0, column=1, sticky=NW, padx=5, pady=2)
 
 # Eta
@@ -687,7 +769,7 @@ eta = StringVar()
 eta.set(json_set['eta'])
 eta_label = ttk.Label(advanced_settings_frame, text="Eta")
 eta_label.grid(row=1, column=0, sticky=NW, padx=5, pady=2)
-eta_entry = ttk.Entry(advanced_settings_frame, textvariable=eta, width=20)
+eta_entry = ttk.Entry(advanced_settings_frame, textvariable=eta, width=12)
 eta_entry.grid(row=1, column=1, sticky=NW, padx=5, pady=2)
 
 # Clamp Max
@@ -695,7 +777,7 @@ clamp_max = StringVar()
 clamp_max.set(json_set['clamp_max'])
 clamp_max_label = ttk.Label(advanced_settings_frame, text="Clamp Max")
 clamp_max_label.grid(row=2, column=0, sticky=NW, padx=5, pady=2)
-clamp_max_entry = ttk.Entry(advanced_settings_frame, textvariable=clamp_max, width=20)
+clamp_max_entry = ttk.Entry(advanced_settings_frame, textvariable=clamp_max, width=12)
 clamp_max_entry.grid(row=2, column=1, sticky=NW, padx=5, pady=2)
 
 # Cut Overview
@@ -727,7 +809,7 @@ cutn_batches = IntVar()
 cutn_batches.set(json_set['cutn_batches'])
 cutn_batches_label = ttk.Label(advanced_settings_frame, text="Cutn Batches")
 cutn_batches_label.grid(row=0, column=4, sticky=NW, padx=5, pady=2)
-cutn_batches_entry = ttk.Entry(advanced_settings_frame, textvariable=cutn_batches, width=20)
+cutn_batches_entry = ttk.Entry(advanced_settings_frame, textvariable=cutn_batches, width=6)
 cutn_batches_entry.grid(row=0, column=5, sticky=NW, padx=5, pady=2)
 
 # N Batches
@@ -735,8 +817,14 @@ n_batches = IntVar()
 n_batches.set(json_set['n_batches'])
 n_batches_label = ttk.Label(advanced_settings_frame, text="N Batches")
 n_batches_label.grid(row=1, column=4, sticky=NW, padx=5, pady=2)
-n_batches_entry = ttk.Entry(advanced_settings_frame, textvariable=n_batches, width=20)
+n_batches_entry = ttk.Entry(advanced_settings_frame, textvariable=n_batches, width=6)
 n_batches_entry.grid(row=1, column=5, sticky=NW, padx=5, pady=2)
+
+# Use Secondary Model
+use_secondary_model = BooleanVar()
+use_secondary_model.set(json_set['use_secondary_model'])
+use_secondary_model_check = ttk.Checkbutton(advanced_settings_frame, text="Use Secondary Model", variable=use_secondary_model)
+use_secondary_model_check.grid(row=2, column=4, sticky=NW, padx=5, pady=2)
 
 # Fix Brightness Contrast
 fix_brightness_contrast = BooleanVar()
@@ -909,19 +997,129 @@ symm_switch_entry.grid(row=0, column=5, sticky=NW, padx=5, pady=2)
 
 # Text Prompts Frame
 # Text Prompts
-text_prompts = {}
-text_prompts_label = {}
-text_prompts_entry = {}
-t = 0
-for i in json_set['text_prompts']['0']:
-    text_prompts[i] = StringVar()
-    text_prompts[i].set(json_set['text_prompts']['0'][t])
-    text_prompts_label[i] = ttk.Label(text_prompts_frame, text="Prompt: "+str(t+1))
-    text_prompts_label[i].pack(side=TOP, anchor=W, padx=5, pady=2)
-    text_prompts_entry[i] = ttk.Entry(text_prompts_frame, textvariable=text_prompts[i], width=150)
-    text_prompts_entry[i].pack(side=TOP, anchor=W, padx=5, pady=2)
-    t += 1
 
+# Declare the variables for the text prompts
+prompt_text_box_label = {}
+prompt_text_entry = {}
+prompt_text_vars = {}
+current_step = '0'
+
+def set_prompt_text():
+    global prompt_scheduling
+    global prompt_text
+    try:
+        if json_set['text_prompts']['0']['0']:
+            prompt_scheduling = True
+            prompt_text = json_set['text_prompts']['0']
+            print('Prompt Scheduling is Enabled')
+    except:
+        prompt_scheduling = False
+        prompt_text = []
+        prompt_text = json_set['text_prompts']['0']
+        print('Prompt Scheduling is Disabled')
+
+def get_prompts():
+    global interrupt
+    try:
+        cleanup()
+    except:
+        pass
+    global prompt_text
+    global prompt_steps
+    global prompt_scheduling
+    global prompt_steps_frame
+    global prompt_text_entry
+    global prompt_text_vars
+    global prompts_frame
+    global prompt_step_button
+    prompts_frame = ttk.Frame(text_prompts_frame)
+    prompts_frame.pack(side=TOP, fill=X, expand=True)
+    set_prompt_text()
+    if prompt_scheduling == True:
+        prompt_steps = list(prompt_text.keys())
+        prompt_steps_frame = {}
+        prompt_step_button = {}
+        text_prompts_button_frame.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
+        for k in prompt_steps:
+            prompt_text_box_label[k] = {}
+            prompt_text_entry[k] = {}
+            prompt_text_vars[k] = {}
+            prompt_step_button[k] = ttk.Button(text_prompts_button_frame, text="Step " + k, command=lambda k=k: show_prompt_step(k))
+            prompt_step_button[k].pack(side=LEFT, padx=5, pady=2)
+            prompt_steps_frame[k] = ttk.Frame(prompts_frame)
+            prompt_steps_frame[k].grid(row=0, column=0, sticky=NW, padx=5, pady=2)
+            for j in range(len(prompt_text[k])):
+                prompt_text_box_label[k][j] = ttk.Label(prompt_steps_frame[k], text="Prompt " + str(j+1))
+                prompt_text_box_label[k][j].pack(side=TOP, anchor=NW, padx=5, pady=2)
+                prompt_text_vars[k][j] = StringVar()
+                prompt_text_vars[k][j].set(prompt_text[k][j])
+                prompt_text_entry[k][j] = Entry(prompt_steps_frame[k], textvariable=prompt_text_vars[k][j], width=150)
+                prompt_text_entry[k][j].pack(side=TOP, padx=5, pady=2)
+        prompt_steps_frame['0'].grid(row=0, column=0, sticky=NW, padx=5, pady=2)
+    else:
+        prompt_steps_frame = {}
+        text_prompts_button_frame.grid_forget()
+        prompt_steps_frame['0'] = ttk.Frame(prompts_frame)
+        t = 0
+        for k in prompt_text:
+            prompt_text_vars[t] = StringVar()
+            prompt_text_vars[t].set(k)
+            prompt_text_box_label[t] = ttk.Label(prompt_steps_frame['0'], text="Prompt " + str(t+1)+":")
+            prompt_text_box_label[t].pack(side=TOP, anchor=NW, padx=5, pady=2)
+            prompt_text_entry[t] = Entry(prompt_steps_frame['0'], textvariable=prompt_text_vars[t], width=150)
+            prompt_text_entry[t].pack(side=TOP, anchor=NW, padx=5, pady=2)
+            t += 1
+        prompt_steps_frame['0'].grid(row=0, column=0, sticky=NW, padx=5, pady=2)
+
+def cleanup():
+    # Delete the old UI elements and frames
+    # Entry, Frame, Label, Button for the text prompts
+    global prompt_text_box_label
+    global prompt_text_entry
+    global prompt_text_vars
+    global prompt_steps_frame
+    global prompts_frame
+    global text_prompts_button_frame
+    global prompt_steps
+    global prompt_text
+    global prompt_scheduling
+    global current_step
+    prompt_text_vars = {}
+    if prompt_scheduling == True:
+        for k in prompt_steps:
+            for j in prompt_text_box_label[k]:
+                prompt_text_box_label[k][j].destroy()
+                prompt_text_entry[k][j].destroy()
+                prompt_step_button[k].destroy()
+                prompt_text_vars = {}
+                prompt_steps_frame[k].destroy()
+    else:
+        for k in prompt_text_box_label:
+            try:
+                prompt_text_box_label[k].destroy()
+                prompt_text_entry[k].destroy()
+            except:
+                pass
+            prompt_text_vars = {}
+            prompt_steps_frame['0'].destroy()
+    prompts_frame.destroy()
+
+
+
+def show_prompt_step(step):
+    global current_step
+    try:
+        prompt_steps_frame[current_step].grid_forget()
+    except:
+        pass
+    current_step = step
+    prompt_steps_frame[current_step].grid(row=0, column=0, sticky=NW, padx=5, pady=2)
+
+
+get_prompts()
+show_prompt_step(current_step)
+updater()
+fix_text()
 
 # Run Frame
 # Create scrolling text output from the shell
@@ -943,8 +1141,6 @@ sys.stdout = Redirect(term_text)
 
 
 
-updater()
-show_image()
 
 
 window.mainloop()
