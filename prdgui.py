@@ -369,6 +369,14 @@ def show_symmetry_settings():
         symmetry_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
         json_set['gui']['symmetry_settings'] = True
 
+def show_gobig_settings():
+    if gobig_frame.winfo_viewable():
+        gobig_frame.pack_forget()
+        json_set['gui']['gobig_settings'] = False
+    else:
+        gobig_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
+        json_set['gui']['gobig_settings'] = True
+
 def refresh():
     # Refresh GUI
     global json_set
@@ -474,6 +482,14 @@ def refresh():
     symmetry_loss_h_check.configure(textvariable=symmetry_loss_h)
     symm_switch.set(str(json_set['symm_switch']))
     symm_switch_entry.configure(textvariable=symm_switch)
+    gobig.set(bool(json_set['gobig']))
+    gobig_check.configure(variable=gobig)
+    gobig_maximize.set(bool(json_set['gobig_maximize']))
+    gobig_maximize_check.configure(variable=gobig_maximize)
+    gobig_scale.set(int(json_set['gobig_scale']))
+    gobig_scale_entry.configure(textvariable=gobig_scale)
+    gobig_overlap.set(int(json_set['gobig_overlap']))
+    gobig_overlap_entry.configure(textvariable=gobig_overlap)
     
 def fix_text():
     if prompt_scheduling == True:
@@ -578,6 +594,14 @@ def updater():
     json_set['symmetry_loss_h'] = symmetry_loss_h_text
     symm_switch_text = symm_switch_entry.get()
     json_set['symm_switch'] = symm_switch_text
+    gobig_text = gobig.get()
+    json_set['gobig'] = gobig_text
+    gobig_maximize_text = gobig_maximize.get()
+    json_set['gobig_maximize'] = gobig_maximize_text
+    gobig_overlap_text = gobig_overlap_entry.get()
+    json_set['gobig_overlap'] = gobig_overlap_text
+    gobig_scale_text = gobig_scale_entry.get()
+    json_set['gobig_scale'] = gobig_scale_text
     if prompt_scheduling == True:
         text_prompts_button_frame.grid(row=0, column=0, sticky=NW)
         for i in prompt_steps:
@@ -672,6 +696,9 @@ laion_settings_frame.pack(side=BOTTOM, fill=BOTH, padx=2, pady=2)
 
 # Symmetry Frame
 symmetry_frame = ttk.Frame(left_frame_top, style='Yellow.TFrame')
+
+# GoBig Frame
+gobig_frame = ttk.Frame(left_frame_top, style='Yellow.TFrame')
 
 # Middle Bottom Frame
 left_frame_bottom_top = ttk.Frame(left_frame_bottom)
@@ -1066,6 +1093,41 @@ symm_switch_label.grid(row=0, column=4, sticky=NW, padx=5, pady=2)
 symm_switch_entry = ttk.Entry(symmetry_frame, textvariable=symm_switch, width=20)
 symm_switch_entry.grid(row=0, column=5, sticky=NW, padx=5, pady=2)
 
+# GoBig Button
+gobig_button = ttk.Button(advanced_settings_frame, text="GoBig Settings", command=show_gobig_settings)
+gobig_button.grid(row=2, column=7, sticky=NW, padx=5, pady=2)
+
+# GoBig Settings
+# gobig, gobig_scale, gobig_scale, gobig_overlap, gobig_maximize
+
+gobig = BooleanVar()
+if 'gobig' in json_set:
+    gobig.set(bool(json_set['gobig']))
+else:
+    gobig.set(False)
+gobig_check = ttk.Checkbutton(gobig_frame, text="gobig", variable=gobig)
+gobig_check.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
+
+gobig_maximize = BooleanVar()
+gobig_maximize.set(bool(json_set['gobig_maximize']))
+gobig_maximize_check = ttk.Checkbutton(gobig_frame, text="gobig_maximize", variable=gobig_maximize)
+gobig_maximize_check.grid(row=1, column=0, sticky=NW, padx=5, pady=2)
+
+gobig_scale = IntVar()
+gobig_scale.set(json_set['gobig_scale'])
+gobig_scale_label = ttk.Label(gobig_frame, text="gobig_scale")
+gobig_scale_label.grid(row=1, column=1, sticky=NW, padx=5, pady=2)
+gobig_scale_entry = ttk.Entry(gobig_frame, textvariable=gobig_scale, width=20)
+gobig_scale_entry.grid(row=1, column=2, sticky=NW, padx=5, pady=2)
+
+gobig_overlap = IntVar()
+gobig_overlap.set(json_set['gobig_overlap'])
+gobig_overlap_label = ttk.Label(gobig_frame, text="gobig_overlap")
+gobig_overlap_label.grid(row=0, column=1, sticky=NW, padx=5, pady=2)
+gobig_overlap_entry = ttk.Entry(gobig_frame, textvariable=gobig_overlap, width=20)
+gobig_overlap_entry.grid(row=0, column=2, sticky=NW, padx=5, pady=2)
+
+
 
 # Text Prompts Frame
 # Text Prompts
@@ -1277,6 +1339,8 @@ try:
         show_clip_settings()
     if json_set['gui']['symmetry_settings'] == True:
         show_symmetry_settings()
+    if json_set['gui']['gobig_settings'] == True:
+        show_gobig_settings()
 except:
     json_set['gui'] = {}
     json_set['gui']['advanced_settings'] = False
