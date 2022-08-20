@@ -228,6 +228,20 @@ def refresh_ui():
     fix_text()
     show_prompt_step('0')
 
+def fix_text_box_schedules():
+    global json_set
+    global args
+    if not '*' in json_set['clip_guidance_scale'] and not 'auto' in json_set['clip_guidance_scale']:
+        json_set['clip_guidance_scale'] = '['+json_set['clip_guidance_scale']+']*1000'
+    if not '*' in json_set['symm_loss_scale']:
+        json_set['symm_loss_scale'] = '['+json_set['symm_loss_scale']+']*1000'
+    if not '*' in json_set['cut_overview']:
+        json_set['cut_overview'] = '['+json_set['cut_overview']+']*1000'
+    if not '*' in json_set['cut_innercut']:
+        json_set['cut_innercut'] = '['+json_set['cut_innercut']+']*1000'
+    if not '*' in json_set['cut_ic_pow']:
+        json_set['cut_ic_pow'] = '['+json_set['cut_ic_pow']+']*1000'
+
 def save_settings_file():
     global interrupt
     interrupt = True
@@ -237,6 +251,7 @@ def save_settings_file():
     global prompt_steps
     global prompt_scheduling
     global prompt_text_vars
+    fix_text_box_schedules()
     # Save Settings to JSON
     if prompt_scheduling == True:
         if len(prompt_steps) == 1:
@@ -260,6 +275,7 @@ def save_as_settings_file():
     global json_set
     global gui_settings
     global prompt_text
+    fix_text_box_schedules()
     # Save Settings to JSON
     if prompt_scheduling == True:
         for k in list (json_set['text_prompts']['0'].keys()):
@@ -740,15 +756,18 @@ skip_steps = StringVar()
 skip_steps.set(json_set['skip_steps'])
 skip_steps_label = ttk.Label(basic_settings_frame, text="Skip Steps")
 skip_steps_label.grid(row=0, column=4, sticky=NW, padx=5, pady=2)
-skip_steps_entry = ttk.Entry(basic_settings_frame, textvariable=skip_steps, width=10)
+skip_steps_entry = ttk.Entry(basic_settings_frame, textvariable=skip_steps, width=12)
 skip_steps_entry.grid(row=0, column=5, sticky=NW, padx=5, pady=2)
 
 # Clip Guidance Scale
 clip_guidance_scale = StringVar()
-clip_guidance_scale.set(json_set['clip_guidance_scale'])
+if '*1000' in json_set['clip_guidance_scale']:
+    clip_guidance_scale.set(json_set['clip_guidance_scale'][1:-6])
+else:
+    clip_guidance_scale.set(json_set['clip_guidance_scale'])
 clip_guidance_scale_label = ttk.Label(basic_settings_frame, text="Clip Guidance Scale")
 clip_guidance_scale_label.grid(row=1, column=4, sticky=NW, padx=5, pady=2)
-clip_guidance_scale_entry = ttk.Entry(basic_settings_frame, textvariable=clip_guidance_scale, width=10)
+clip_guidance_scale_entry = ttk.Entry(basic_settings_frame, textvariable=clip_guidance_scale, width=12)
 clip_guidance_scale_entry.grid(row=1, column=5, sticky=NW, padx=5, pady=2)
 
 # Init Image
@@ -823,7 +842,10 @@ clamp_max_entry.grid(row=2, column=1, sticky=NW, padx=5, pady=2)
 
 # Cut Overview
 cut_overview = StringVar()
-cut_overview.set(json_set['cut_overview'])
+if '*1000' in json_set['cut_overview']:
+    cut_overview.set(json_set['cut_overview'][1:-6])
+else:
+    cut_overview.set(json_set['cut_overview'])
 cut_overview_label = ttk.Label(advanced_settings_frame, text="Cut Overview")
 cut_overview_label.grid(row=0, column=2, sticky=NW, padx=5, pady=2)
 cut_overview_entry = ttk.Entry(advanced_settings_frame, textvariable=cut_overview, width=20)
@@ -831,7 +853,10 @@ cut_overview_entry.grid(row=0, column=3, sticky=NW, padx=5, pady=2)
 
 # Cut Innercut
 cut_innercut = StringVar()
-cut_innercut.set(json_set['cut_innercut'])
+if '*1000' in json_set['cut_innercut']:
+    cut_innercut.set(json_set['cut_innercut'][1:-6])
+else:
+    cut_innercut.set(json_set['cut_innercut'])
 cut_innercut_label = ttk.Label(advanced_settings_frame, text="Cut Innercut")
 cut_innercut_label.grid(row=1, column=2, sticky=NW, padx=5, pady=2)
 cut_innercut_entry = ttk.Entry(advanced_settings_frame, textvariable=cut_innercut, width=20)
@@ -839,7 +864,10 @@ cut_innercut_entry.grid(row=1, column=3, sticky=NW, padx=5, pady=2)
 
 # Cut IC Pow
 cut_ic_pow = StringVar()
-cut_ic_pow.set(json_set['cut_ic_pow'])
+if '*1000' in json_set['cut_ic_pow']:
+    cut_ic_pow.set(json_set['cut_ic_pow'][1:-6])
+else:
+    cut_ic_pow.set(json_set['cut_ic_pow'])
 cut_ic_pow_label = ttk.Label(advanced_settings_frame, text="Cut IC Pow")
 cut_ic_pow_label.grid(row=2, column=2, sticky=NW, padx=5, pady=2)
 cut_ic_pow_entry = ttk.Entry(advanced_settings_frame, textvariable=cut_ic_pow, width=20)
@@ -1022,7 +1050,10 @@ symmetry_loss_h_check = ttk.Checkbutton(symmetry_frame, text="symmetry_loss_h", 
 symmetry_loss_h_check.grid(row=0, column=1, sticky=NW, padx=5, pady=2)
 
 symm_loss_scale = StringVar()
-symm_loss_scale.set(json_set['symm_loss_scale'])
+if '*1000' in json_set['symm_loss_scale']:
+    symm_loss_scale.set(json_set['symm_loss_scale'][1:-6])
+else:
+    symm_loss_scale.set(json_set['symm_loss_scale'])
 symm_loss_scale_label = ttk.Label(symmetry_frame, text="symm_loss_scale")
 symm_loss_scale_label.grid(row=0, column=2, sticky=NW, padx=5, pady=2)
 symm_loss_scale_entry = ttk.Entry(symmetry_frame, textvariable=symm_loss_scale, width=20)
