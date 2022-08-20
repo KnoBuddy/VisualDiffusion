@@ -37,7 +37,7 @@ from PIL import ImageTk
 
 
 # File Names
-gui_settings = 'gui_settings.json'
+gui_settings = 'multi_settings.json'
 default_settings = 'settings.json'
 progress = 'progress.png'
 progress_done = 'progress_done.png'
@@ -47,23 +47,28 @@ default_prompt = ["A beautiful painting of a Castle in the Scottish Highlands, u
 
 
 # Load Settings from JSON
-if os.path.exists(gui_settings):
-    try:
-        json_set = json.load(open(gui_settings))
-        print("GUI settings loaded", file = sys.stdout)
-    except:
-        print("Error loading gui_settings.json", file = sys.stdout)
-        print("Loading from Defaults...", file = sys.stdout)
+def load_json_file():
+    global json_set
+    if os.path.exists(gui_settings):
+        try:
+            json_set = json.load(open(gui_settings))
+            print("GUI settings loaded", file = sys.stdout)
+        except:
+            print("Error loading gui_settings.json", file = sys.stdout)
+            print("Loading from Defaults...", file = sys.stdout)
+            json_set = json.load(open(default_settings))
+            json_set['text_prompts']['0'] = default_prompt
+    else:
         json_set = json.load(open(default_settings))
-        json_set['text_prompts']['0'] = default_prompt
-else:
-    json_set = json.load(open(default_settings))
-    print("Default settings loaded", file = sys.stdout)
+        print("Default settings loaded", file = sys.stdout)
+
+load_json_file()
 
 # First Run Check Variables
 is_running = False
 has_run = False
 interrupt = False
+
 
 args = list(json_set.keys())
 
@@ -228,25 +233,33 @@ def save_settings_file():
     interrupt = True
     global json_set
     global gui_settings
+    global prompt_text
+    global prompt_steps
+    global prompt_scheduling
+    global prompt_text_vars
     # Save Settings to JSON
-    print(gui_settings)
+    if prompt_scheduling == True:
+        if len(prompt_steps) == 1:
+            prompt_scheduling = False
+            json_set['text_prompts'] = json_set['text_prompts']['0']
     if prompt_scheduling == True:
         for k in list (json_set['text_prompts']['0'].keys()):
             if json_set['text_prompts']['0'][k] == []:
                 del json_set['text_prompts']['0'][k]
-                print('ahaha!')
     with open(gui_settings, 'w+', encoding='utf-8') as f:
         json.dump(json_set, f, ensure_ascii=False, indent=4)
-    print("Settings saved", file = sys.stdout)
+    print("Settings saved to "+gui_settings, file = sys.stdout)
     interrupt = False
-    cleanup()
-    get_prompts()
+    prompt_text = json_set['text_prompts']['0']
+    fix_prompt_steps()
+    refresh_ui()
 
 def save_as_settings_file():
     global interrupt
     interrupt = True
     global json_set
     global gui_settings
+    global prompt_text
     # Save Settings to JSON
     if prompt_scheduling == True:
         for k in list (json_set['text_prompts']['0'].keys()):
@@ -261,9 +274,9 @@ def save_as_settings_file():
             json.dump(json_set, f, ensure_ascii=False, indent=4)
         print("Settings saved", file = sys.stdout)
     interrupt = False
-    cleanup()
-    get_prompts()
-    fix_text()
+    prompt_text = json_set['text_prompts']['0']
+    fix_prompt_steps()
+    refresh_ui()
 
 
 def load_settings_file():
@@ -319,20 +332,26 @@ def show_advanced_settings():
         advanced_settings_frame.pack_forget()
         clip_model_frame.pack_forget()
         symmetry_frame.pack_forget()
+        json_set['gui']['advanced_settings'] = False
     else:
         advanced_settings_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
+        json_set['gui']['advanced_settings'] = True
 
 def show_clip_settings():
     if clip_model_frame.winfo_viewable():
         clip_model_frame.pack_forget()
+        json_set['gui']['clip_settings'] = False
     else:
         clip_model_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
+        json_set['gui']['clip_settings'] = True
 
 def show_symmetry_settings():
     if symmetry_frame.winfo_viewable():
         symmetry_frame.pack_forget()
+        json_set['gui']['symmetry_settings'] = False
     else:
         symmetry_frame.pack(side=TOP, fill=BOTH, padx=2, pady=2)
+        json_set['gui']['symmetry_settings'] = True
 
 def refresh():
     # Refresh GUI
@@ -341,16 +360,8 @@ def refresh():
     global prompt_text
     global prompt_text_vars
     global prompt_steps
-    try:
-        if ['0'] in json_set['text_prompts']['0']:
-            prompt_scheduling = True
-            prompt_text = json_set['text_prompts']['0']
-            prompt_steps = list(prompt_text.keys())
-            print('Prompt Scheduling is enabled', file = sys.stdout)
-    except:
-        prompt_scheduling = False
-        prompt_text = json_set['text_prompts']['0']
-        print("Prompt Scheduling is disabled", file = sys.stdout)
+    batch_name.set(json_set['batch_name'])
+    batch_name_entry.configure(text=batch_name.get())
     steps.set(json_set['steps'])
     steps_entry.configure(textvariable=steps)
     height.set(json_set['height'])
@@ -458,7 +469,9 @@ def updater():
     if interrupt == True:
         return
     global json_set
-    window.title('VisualDiffusion (a GUI for ProgRock Diffusion): '+gui_settings)
+    window.title('VisualDiffusion (a GUI for ProgRock Diffusion): '+batch_name.get()+' '+gui_settings)
+    batch_name_text = str(batch_name_entry.get())
+    json_set['batch_name'] = batch_name_text
     steps_text = int(steps_entry.get())
     json_set['steps'] = steps_text
     height_text = int(height_entry.get())
@@ -553,11 +566,13 @@ def updater():
         text_prompts_button_frame.grid(row=0, column=0, sticky=NW)
         for i in prompt_steps:
             temp_prompts = []
-            for k in prompt_text_entry[i].keys():
+            for k in prompt_text_vars[i]:
                 prompt_text_entry_text = prompt_text_vars[i][k].get()
                 if prompt_text_entry_text != '':
                     temp_prompts.append(prompt_text_entry_text)
                 json_set['text_prompts']['0'][i] = temp_prompts
+                sorted_prompts = dict(sorted(json_set['text_prompts']['0'].items()))
+                json_set['text_prompts']['0'] = sorted_prompts
     else:
         temp_prompts = []
         t = 0
@@ -609,6 +624,16 @@ right_frame = ttk.Frame(master_frame)
 right_frame.pack(side=RIGHT, fill=BOTH, expand=1)
 
 # Left Frame
+batch_name_frame = ttk.Frame(left_frame_top, style='Green.TFrame')
+batch_name_frame.pack(side=TOP, fill=BOTH, expand=1)
+
+batch_name = StringVar()
+batch_name.set(json_set['batch_name'])
+batch_name_label = ttk.Label(batch_name_frame, text='Batch Name')
+batch_name_label.grid(row=0, column=0, sticky=NW, padx=2, pady=2)
+batch_name_entry = ttk.Entry(batch_name_frame, textvariable=batch_name)
+batch_name_entry.grid(row=0, column=1, sticky=NW, padx=2, pady=2)
+
 # Top Frame
 basic_settings_frame = ttk.Frame(left_frame_top, style='Green.TFrame')
 basic_settings_frame.pack(fill=BOTH,padx=2, pady=2)
@@ -1050,20 +1075,18 @@ def get_prompts():
     global prompt_step_button
     global new_prompt_button
     global new_step_button
-    set_prompt_text()
     prompts_frame = ttk.Frame(text_prompts_frame)
     prompts_frame.pack(side=TOP, fill=X, expand=True)
-    prompts_frame_top = ttk.Frame(prompts_frame, style='Gray.TFrame')
-    prompts_frame_top.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
+    prompts_frame_top = ttk.Frame(left_frame_bottom_top, style='Gray.TFrame')
+    prompts_frame_top.grid(row=1, column=0, sticky=NW, padx=5, pady=2)
     new_prompt_button = ttk.Button(prompts_frame_top, text="New Prompt", command=new_prompt)
     new_prompt_button.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
-    new_step_button = ttk.Button(prompts_frame_top, text="New Step", command=lambda: new_step(new_step_text.get()))
-    new_step_button.grid(row=0, column=1, sticky=NW, padx=5, pady=2)
     new_step_text = StringVar()
     new_step_entry = ttk.Entry(prompts_frame_top, textvariable=new_step_text, width=20)
     new_step_entry.grid(row=0, column=2, sticky=NW, padx=5, pady=2)
+    new_step_button = ttk.Button(prompts_frame_top, text="New Step", command=lambda: new_step(new_step_entry.get()))
+    new_step_button.grid(row=0, column=1, sticky=NW, padx=5, pady=2)
     if prompt_scheduling == True:
-        prompt_steps = list(prompt_text.keys())
         prompt_steps_frame = {}
         prompt_step_button = {}
         text_prompts_button_frame.grid(row=0, column=0, sticky=NW, padx=5, pady=2)
@@ -1075,20 +1098,25 @@ def get_prompts():
             prompt_step_button[k].pack(side=LEFT, padx=5, pady=2)
             prompt_steps_frame[k] = ttk.Frame(prompts_frame)
             prompt_steps_frame[k].grid(row=1, column=0, sticky=NW, padx=5, pady=2)
-            for j in range(len(prompt_text[k])):
-                prompt_text_box_label[k][j] = ttk.Label(prompt_steps_frame[k], text="Prompt " + str(j+1))
+            t = 0
+            for j in prompt_text[k]:
+                prompt_text_box_label[k][j] = ttk.Label(prompt_steps_frame[k], text="Prompt " + str(t+1))
                 prompt_text_box_label[k][j].pack(side=TOP, anchor=NW, padx=5, pady=2)
                 prompt_text_vars[k][j] = StringVar()
-                prompt_text_vars[k][j].set(prompt_text[k][j])
+                prompt_text_vars[k][j].set(prompt_text[k][t])
                 prompt_text_entry[k][j] = Entry(prompt_steps_frame[k], textvariable=prompt_text_vars[k][j], width=150)
                 prompt_text_entry[k][j].pack(side=TOP, padx=5, pady=2)
+                t += 1
         prompt_steps_frame['0'].grid(row=1, column=0, sticky=NW, padx=5, pady=2)
     else:
+        prompt_step_button = {}
         prompt_steps = ['0']
         prompt_steps_frame = {}
         text_prompts_button_frame.grid_forget()
         prompt_steps_frame['0'] = ttk.Frame(prompts_frame)
         t = 0
+        prompt_step_button['0'] = ttk.Button(text_prompts_button_frame, text="Step 0", command=lambda : show_prompt_step('0'))
+        prompt_step_button['0'].pack(side=LEFT, padx=5, pady=2)
         for k in prompt_text:
             prompt_text_vars[t] = StringVar()
             prompt_text_vars[t].set(k)
@@ -1120,6 +1148,14 @@ def new_prompt():
         prompt_text_entry[len(prompt_text_vars)-1].pack(side=TOP, padx=5, pady=2)
 
 def new_step(step):
+    if step == '':
+        return
+    if isinstance(step, int) == False:
+        try:
+            step = int(step)
+        except:
+            return
+    global prompt_text
     global prompt_text_vars
     global prompt_text_entry
     global prompt_text_box_label
@@ -1128,21 +1164,24 @@ def new_step(step):
     global current_step
     global prompt_steps
     global prompt_scheduling
+    global new_prompt_button
+    global new_step_button
+    global new_step_entry
+    global new_step_text
     global json_set
-    prompt_step_button = {}
     if prompt_scheduling == False:
         temp = []
-        print(prompt_text_vars)
         for i in prompt_text_vars:
             temp.append(prompt_text_vars[i].get())
             json_set['text_prompts']['0'] = temp
-    prompt_steps.append(str(len(prompt_steps)))
-    json_set['text_prompts']['0'] = {"0": temp, str(step): [" "]}
-    prompt_text_vars = {}
-    prompt_text_entry = {}
-    prompt_text_box_label= {}
-    get_prompts()
-    show_prompt_step(str(len(prompt_steps)))
+        json_set['text_prompts']['0'] = {"0": temp, str(step): [" "]}
+        prompt_scheduling = True
+        prompt_text = json_set['text_prompts']['0']
+    prompt_steps.append(str(step))
+    prompt_text[str(step)] = []
+    prompt_text[str(step)].append(" ")
+    refresh_ui()
+    window.after(100, show_prompt_step(str(step)))
 
 
 def cleanup():
@@ -1157,31 +1196,19 @@ def cleanup():
     global prompt_steps
     global prompt_text
     global prompt_scheduling
+    global prompt_step_button
     new_prompt_button.destroy()
     new_step_button.destroy()
     prompt_text_vars = {}
-    if prompt_scheduling == True:
-        for k in prompt_steps:
-            for j in prompt_text_box_label[k]:
-                prompt_text_box_label[k][j].destroy()
-                prompt_text_entry[k][j].destroy()
-                prompt_step_button[k].destroy()
-                prompt_text_vars = {}
-                prompt_steps_frame[k].destroy()
-    else:
-        for k in prompt_text_box_label:
-            try:
-                prompt_text_box_label[k].destroy()
-                prompt_text_entry[k].destroy()
-            except:
-                pass
-            prompt_text_vars = {}
-            prompt_steps_frame['0'].destroy()
-    try:
-        for i in prompt_steps:
-            prompt_step_button[i].destroy()
-    except:
-        pass
+    for child in text_prompts_button_frame.winfo_children():
+        child.destroy()
+    for child in text_prompts_frame.winfo_children():
+        child.destroy()
+    prompt_steps_frame = {}
+    prompt_text_box_label = {}
+    prompt_text_entry = {}
+    prompt_text_vars = {}
+    prompt_step_button = {}
     prompts_frame.destroy()
 
 
@@ -1192,15 +1219,43 @@ def show_prompt_step(step):
         prompt_steps_frame[current_step].grid_forget()
     except:
         pass
-    current_step = step
-    prompt_steps_frame[current_step].grid(row=1, column=0, sticky=NW, padx=5, pady=2)
+    try:
+        current_step = step
+        prompt_steps_frame[current_step].grid(row=1, column=0, sticky=NW, padx=5, pady=2)
+    except:
+        pass
     window.update()
 
+set_prompt_text()
 
+def fix_prompt_steps():
+    global prompt_steps
+    try:
+        prompt_steps = list(map(int, prompt_text.keys()))
+        prompt_steps.sort()
+        prompt_steps = list(map(str, prompt_steps))
+    except:
+        prompt_steps = []
+
+fix_prompt_steps()
+
+try:
+    if json_set['gui']['advanced_settings'] == True:
+        show_advanced_settings()
+    if json_set['gui']['clip_settings'] == True:
+        show_clip_settings()
+    if json_set['gui']['symmetry_settings'] == True:
+        show_symmetry_settings()
+except:
+    json_set['gui'] = {}
+    json_set['gui']['advanced_settings'] = False
+    json_set['gui']['clip_settings'] = False
+    json_set['gui']['symmetry_settings'] = False
 get_prompts()
 updater()
 fix_text()
 show_image()
+refresh_ui()
 
 # Run Frame
 # Create scrolling text output from the shell
@@ -1219,9 +1274,6 @@ scrollbar['command'] = term_text.yview
 
 old_stdout = sys.stdout    
 sys.stdout = Redirect(term_text)
-
-
-
 
 
 window.mainloop()
