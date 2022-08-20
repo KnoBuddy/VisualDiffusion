@@ -119,7 +119,10 @@ def do_run():
         #print("Command: " + prd_cmd, file = sys.stdout)
         prd_args = shlex.split(prd_cmd)
         #print("Args: " + prd_args, file = sys.stdout)
-        p = subprocess.Popen(shlex.split('python prd.py -s '+gui_settings), stdout=subprocess.PIPE, text=True)
+        if json_set['gobig'] == True:
+            p = subprocess.Popen(shlex.split('python prd.py -s '+gui_settings+' --gobig'), stdout=subprocess.PIPE, text=True)
+        else:
+            p = subprocess.Popen(shlex.split('python prd.py -s '+gui_settings), stdout=subprocess.PIPE, text=True)
         updater()
         while p.poll() is None:
             line = p.stdout.readline()
