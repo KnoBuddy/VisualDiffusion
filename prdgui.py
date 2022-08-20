@@ -1349,6 +1349,7 @@ except:
     json_set['gui']['advanced_settings'] = False
     json_set['gui']['clip_settings'] = False
     json_set['gui']['symmetry_settings'] = False
+    json_set['gui']['gobig_settings'] = False
 get_prompts()
 updater()
 fix_text()
