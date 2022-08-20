@@ -3,7 +3,7 @@ A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Noteboo
 
 If you would like support me, the development of this GUI, or maybe you have a feature that you desperately want added, please consider supporting me and this software's development on my [Patreon](https://www.patreon.com/knobuddy).
 
-![image](https://user-images.githubusercontent.com/64171756/185767822-febddc8f-d634-4f44-95d2-85a65cd6156b.png)
+![image](https://user-images.githubusercontent.com/64171756/185768885-05d4ea88-e548-4912-b6ab-d3e40a65c4f7.png)
 
 # Instructions for updating VisualDiffusion
 ```
