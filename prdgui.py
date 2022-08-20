@@ -37,7 +37,7 @@ from PIL import ImageTk
 
 
 # File Names
-gui_settings = 'multi_settings.json'
+gui_settings = 'gui_settings.json'
 default_settings = 'settings.json'
 progress = 'progress.png'
 progress_done = 'progress_done.png'
