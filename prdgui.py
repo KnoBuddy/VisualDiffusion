@@ -601,9 +601,9 @@ def updater():
     json_set['gobig'] = gobig_text
     gobig_maximize_text = gobig_maximize.get()
     json_set['gobig_maximize'] = gobig_maximize_text
-    gobig_overlap_text = gobig_overlap_entry.get()
+    gobig_overlap_text = int(gobig_overlap_entry.get())
     json_set['gobig_overlap'] = gobig_overlap_text
-    gobig_scale_text = gobig_scale_entry.get()
+    gobig_scale_text = int(gobig_scale_entry.get())
     json_set['gobig_scale'] = gobig_scale_text
     if prompt_scheduling == True:
         text_prompts_button_frame.grid(row=0, column=0, sticky=NW)
