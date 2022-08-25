@@ -1,7 +1,7 @@
 # VisualDiffusion
 A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Notebooks.
 
-[CLICK HERE FOR PROGROCK DIFFUSION](#install-prd) or [CLICK HERE FOR PROGROCK-STABLE](#install-prs)
+[CLICK HERE FOR PROGROCK DIFFUSION](#instructions-for-using-visualdiffusion-with-progrockdiffusion) or [CLICK HERE FOR PROGROCK-STABLE](#instructions-for-using-visualdiffusion-with-progrock-stable)
 
 If you would like support me, the development of this GUI, or maybe you have a feature that you desperately want added, please consider supporting me and this software's development on my [Patreon](https://www.patreon.com/knobuddy).
 
@@ -52,9 +52,9 @@ python prd.py -s gui_settings.json <YOUR ARGS GO HERE>
 ```
 
 
-![image](https://user-images.githubusercontent.com/64171756/186770336-32287b96-7ae7-42ed-9163-68d80913bfd5.png)
-# Instructions for using VisualDiffusion with ProgRock-Stable
 
+# Instructions for using VisualDiffusion with ProgRock-Stable
+![image](https://user-images.githubusercontent.com/64171756/186770336-32287b96-7ae7-42ed-9163-68d80913bfd5.png)
 ## Install PRS
 
 Follow the [Instruction Here](https://github.com/lowfuel/progrock-stable).
