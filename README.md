@@ -5,7 +5,6 @@ A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Noteboo
 
 If you would like support me, the development of this GUI, or maybe you have a feature that you desperately want added, please consider supporting me and this software's development on my [Patreon](https://www.patreon.com/knobuddy).
 
-![image](https://user-images.githubusercontent.com/64171756/186770336-32287b96-7ae7-42ed-9163-68d80913bfd5.png)
 ![image](https://user-images.githubusercontent.com/64171756/185768885-05d4ea88-e548-4912-b6ab-d3e40a65c4f7.png)
 
 # Instructions for updating VisualDiffusion
@@ -51,6 +50,9 @@ The final text box is for extra shell arguments. They will be parsed after the i
 ```
 python prd.py -s gui_settings.json <YOUR ARGS GO HERE>
 ```
+
+
+![image](https://user-images.githubusercontent.com/64171756/186770336-32287b96-7ae7-42ed-9163-68d80913bfd5.png)
 # Instructions for using VisualDiffusion with ProgRock-Stable
 
 ## Install PRS
