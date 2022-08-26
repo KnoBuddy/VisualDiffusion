@@ -52,7 +52,7 @@ python prd.py -s gui_settings.json <YOUR ARGS GO HERE>
 
 
 # Instructions for using VisualDiffusion with ProgRock-Stable
-![image](https://user-images.githubusercontent.com/64171756/186978277-e6d78abe-bc6f-44b0-b649-a6fe280c8383.png)
+![image](https://user-images.githubusercontent.com/64171756/186978420-d18ad0f6-5a98-4e8c-ba2b-468b430231a1.png)
 ## Install PRS
 
 Follow the [Instruction Here](https://github.com/lowfuel/progrock-stable).
