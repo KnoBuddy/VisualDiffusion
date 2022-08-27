@@ -109,7 +109,6 @@ def set_variables():
     init_strength = json_set['init_strength']
     gobig_maximize = json_set['gobig_maximize']
     gobig_overlap = json_set['gobig_overlap']
-    method = json_set['method']
     eta = json_set['eta']
     from_file = json_set['from_file']
     cool_down = json_set['cool_down']
@@ -118,6 +117,10 @@ def set_variables():
         gobig = json_set['gobig']
     except:
         gobig = False
+    try:
+        method = json_set['method']
+    except:
+        method = 'k_dpm_2_ancestral'
 
 
 def draw_main_window():
