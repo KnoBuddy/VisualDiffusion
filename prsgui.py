@@ -1,8 +1,6 @@
-from encodings import utf_8
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-from xmlrpc.client import Boolean
 import collections
 import json5 as json
 import os
@@ -11,14 +9,16 @@ import subprocess
 import shutil
 import threading
 import shlex
+from PIL import Image
+from PIL import ImageTk
 
 
 # File Names
 prompts_file = 'prompts.txt'
 gui_settings = 'gui_settings.json'
 default_settings_file = 'settings.json'
+sample = './out/Default/00000.png'
 progress = 'progress.png'
-progress_done = 'progress_done.png'
 prd = 'prd.py'
 
 default_prompt = "A beautiful painting of a Castle in the Scottish Highlands, underexposed and overcast, by Banksy, Beeple, and Bob Ross, trending on ArtStation, vibrant"
@@ -81,17 +81,18 @@ def set_variables():
     global init_strength
     global gobig_maximize
     global gobig_overlap
-    global plms
+    global method
     global eta
     global from_file
     global cool_down
     global use_jpg
+    global gobig
     global prompts_file
     global json_set
     # Set Variables
     # batch_name, width, height, steps, scale, seed, 
     # n_batches, n_samples, n_iter, n_rows, init_image, init_strength,
-    # gobig_maximize, gobig_overlap, plms, eta, from_file, cool_down
+    # gobig_maximize, gobig_overlap, method, eta, from_file, cool_down
     load_txt_file()
     load_json_file()
     batch_name = json_set['batch_name']
@@ -108,15 +109,20 @@ def set_variables():
     init_strength = json_set['init_strength']
     gobig_maximize = json_set['gobig_maximize']
     gobig_overlap = json_set['gobig_overlap']
-    plms = json_set['plms']
+    method = json_set['method']
     eta = json_set['eta']
     from_file = json_set['from_file']
     cool_down = json_set['cool_down']
     use_jpg = json_set['use_jpg']
+    try:
+        gobig = json_set['gobig']
+    except:
+        gobig = False
 
 
 def draw_main_window():
     global window
+    global master_frame
     global main_frame
     global prompt_frame
     global prompt_text_frame
@@ -138,14 +144,19 @@ def draw_main_window():
     s.configure('TFrame', background='Light Blue')
     s.configure('Green.TFrame', background='Light Green', relief='ridge')
     
+    # Draw Master Frame
+    master_frame = ttk.Frame(window, style='TFrame')
+    master_frame.pack(side=RIGHT, fill=BOTH, expand=True)
+
     # Draw Main Frame
-    main_frame = ttk.Frame(window, style='TFrame')
-    main_frame.pack(fill='both', expand=True)
+    main_frame = ttk.Frame(master_frame, style='TFrame')
+    main_frame.pack(side=LEFT, fill='x', expand=True, anchor=NW)
     
     # Draw Calls
     #set_variables()
     draw_basic()
     draw_prompts()
+    draw_progress()
 
 def draw_basic():
     global batch_name_str
@@ -156,18 +167,13 @@ def draw_basic():
     global scale_entry
     global seed_entry
     global n_batches_entry
-    global n_samples_entry
-    global n_iter_entry
-    global n_rows_entry
-    global init_image_entry
-    global init_strength_entry
     global gobig_maximize_str
     global gobig_overlap_entry
-    global plms_entry
+    global method_str
     global eta_entry
-    global from_file_entry
     global cool_down_entry
     global use_jpg_str
+    global gobig_str
 
     # Draw Basic Settings Frame
     basic_settings_frame = ttk.Frame(main_frame, style='TFrame')
@@ -232,7 +238,12 @@ def draw_basic():
     seed_label.grid(row=1, column=2, sticky=NW)
     seed_entry = Entry(basic_settings_entry_frame, textvariable=seed_str)
     seed_entry.grid(row=1, column=3, sticky=NW)
-    # Draw gobig_maximize Checkbutton
+    # Draw gobig Checkbutton
+    gobig_str = BooleanVar()
+    gobig_str.set(gobig)
+    gobig_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='Gobig', variable=gobig_str)
+    gobig_checkbutton.grid(row=0, column=8, sticky=NW)
+    # Maximize Checkbutton
     gobig_maximize_str = BooleanVar()
     gobig_maximize_str.set(gobig_maximize)
     gobig_maximize_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='GoBig Maximize', variable=gobig_maximize_str)
@@ -244,20 +255,21 @@ def draw_basic():
     gobig_overlap_label.grid(row=1, column=7, sticky=NW)
     gobig_overlap_entry = Entry(basic_settings_entry_frame, textvariable=gobig_overlap_str)
     gobig_overlap_entry.grid(row=1, column=8, sticky=NW)
-    # Draw plms Entry
-    plms_str = StringVar()
-    plms_str.set(plms)
-    plms_label = ttk.Label(basic_settings_entry_frame, text='PLMS:')
-    plms_label.grid(row=3, column=2, sticky=NW)
-    plms_entry = Entry(basic_settings_entry_frame, textvariable=plms_str)
-    plms_entry.grid(row=3, column=3, sticky=NW)
+    # Draw method OptionMenu
+    # Options: ['k_lms', 'k_dpm_2_ancestral', 'k_dpm_2', 'k_heun', 'k_euler_ancestral', 'k_euler', 'ddim']
+    method_str = StringVar()
+    method_str.set(method)
+    method_label = ttk.Label(basic_settings_entry_frame, text='Diffusion Method:')
+    method_label.grid(row=0, column=9, sticky=NW)
+    method_optionmenu = OptionMenu(basic_settings_entry_frame, method_str, 'k_lms', 'k_dpm_2_ancestral', 'k_dpm_2', 'k_heun', 'k_euler_ancestral', 'k_euler', 'ddim')
+    method_optionmenu.grid(row=0, column=10, sticky=NW)
     # Draw eta Entry
     eta_str = StringVar()
     eta_str.set(eta)
     eta_label = ttk.Label(basic_settings_entry_frame, text='ETA:')
-    eta_label.grid(row=3, column=0, sticky=NW)
+    eta_label.grid(row=2, column=4, sticky=NW)
     eta_entry = Entry(basic_settings_entry_frame, textvariable=eta_str)
-    eta_entry.grid(row=3, column=1, sticky=NW)
+    eta_entry.grid(row=2, column=5, sticky=NW)
     # Draw cool_down Entry
     cool_down_str = StringVar()
     cool_down_str.set(cool_down)
@@ -269,7 +281,7 @@ def draw_basic():
     use_jpg_str = BooleanVar()
     use_jpg_str.set(use_jpg)
     use_jpg_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='Use JPG', variable=use_jpg_str)
-    use_jpg_checkbutton.grid(row=3, column=10, sticky=NW)
+    use_jpg_checkbutton.grid(row=2, column=8, sticky=NW)
     # Draw Batch Name Entry
     batch_name_str = StringVar()
     batch_name_str.set(batch_name)
@@ -277,10 +289,6 @@ def draw_basic():
     batch_name_label.grid(row=2, column=0, sticky=NW)
     batch_name_entry = Entry(basic_settings_entry_frame, textvariable=batch_name_str)
     batch_name_entry.grid(row=2, column=1, sticky=NW)
-
-
-
-
 
 def draw_prompts():
     global prompt_list
@@ -301,11 +309,11 @@ def draw_prompts():
 
     # Draw Prompt Frame
     prompt_frame = ttk.Frame(main_frame, style='Green.TFrame')
-    prompt_frame.pack(side='top', fill='both', expand=True)
+    prompt_frame.pack(side='top', fill='x', expand=True)
 
     # Draw Prompt Button Frame
     prompt_button_frame = ttk.Frame(main_frame, style='TFrame')
-    prompt_button_frame.pack(side=LEFT, fill='both', expand=True)
+    prompt_button_frame.pack(side=LEFT, fill='x', expand=True)
 
     # Draw New Prompt Button
     new_prompt_button = ttk.Button(prompt_button_frame, text='New Prompt', command=new_prompt)
@@ -345,6 +353,13 @@ def draw_prompts():
         prompt_batches_entry[i] = Entry(prompt_text_batches_frame, textvariable=prompt_batches[i], width=10)
         prompt_batches_entry[i].pack(side=TOP, fill='both', expand=True)
 
+def draw_progress():
+    global progress_frame
+    
+    # Draw Progress Frame
+    progress_frame = ttk.Frame(master_frame, style='Green.TFrame')
+    progress_frame.pack(side=RIGHT, fill='both', expand=True)
+
 def save_prompts():
     cleanup()
     # Get Entry Boxes and save to prompt_list
@@ -364,11 +379,12 @@ def save_prompts():
     init_strength = 0.62
     gobig_maximize = bool(gobig_maximize_str.get())
     gobig_overlap = int(gobig_overlap_entry.get())
-    plms = bool(plms_entry.get())
+    method = str(method_str.get())
     eta = float(eta_entry.get())
     from_file = 'prompts.txt'
     cool_down = float(cool_down_entry.get())
     use_jpg = bool(use_jpg_str.get())
+    gobig = bool(gobig_str.get())
 
     # Save Prompt List to prompt.txt
     with open('prompts.txt', 'w+') as f:
@@ -385,7 +401,7 @@ def save_prompts():
         f.close()
     # Save Settings to prompt_N.json
     i = 0
-    json_set = {'prompt': list(prompt_list), 'batch_name': batch_name, 'width': width, 'height': height, 'steps': steps, 'scale': scale, 'seed': seed, 'n_batches': n_batches, 'n_samples': n_samples, 'n_iter': n_iter, 'n_rows': n_rows, 'init_image': init_image, 'init_strength': init_strength, 'gobig_maximize': gobig_maximize, 'gobig_overlap': gobig_overlap, 'plms': plms, 'eta': eta, 'from_file': from_file, 'cool_down': cool_down, 'use_jpg': use_jpg}
+    json_set = {'prompt': list(prompt_list), 'batch_name': batch_name, 'width': width, 'height': height, 'steps': steps, 'scale': scale, 'seed': seed, 'n_batches': n_batches, 'n_samples': n_samples, 'n_iter': n_iter, 'n_rows': n_rows, 'init_image': init_image, 'init_strength': init_strength, 'gobig_maximize': gobig_maximize, 'gobig_overlap': gobig_overlap, 'method': method, 'eta': eta, 'from_file': from_file, 'cool_down': cool_down, 'use_jpg': use_jpg, 'gobig': gobig}
     with open('./settings/'+gui_settings, 'w+', encoding='utf_8') as f:
         json.dump(json_set, f, ensure_ascii=False, indent=4)
     window.title('VisualDiffusion (a GUI for ProgRock-Stable): '+batch_name+' '+gui_settings)
@@ -472,7 +488,110 @@ def start_thread():
 def run_prs():
     save_prompts()
     # Run PRS
-    p = subprocess.Popen(shlex.split('python prs.py -s ./settings/'+gui_settings))
+    global gobig
+    gobig = bool(gobig_str.get())
+    if gobig == True:
+        print('Running PRS with GoBigMode')
+        p = subprocess.Popen(shlex.split('python prs.py -s ./settings/'+gui_settings+' --gobig'))
+    else:
+        print('Running ProgRock-Stable')
+        p = subprocess.Popen(shlex.split('python prs.py -s ./settings/'+gui_settings))
+
+def show_image():
+    global sample
+    sample = './out/'+batch_name+'/samples/00000.png'
+    if os.path.isfile(sample):
+        print("Showing Image")
+    if is_running == True:
+        return
+    else:
+        try:
+            shutil.copyfile(sample, progress)
+        except:
+            print("No Sample")
+            image = Image.new('RGB', (512, 512), (255, 255, 255))
+            image.save(sample)
+            image.save(progress)
+        master_frame.pack()
+        im = Image.open(progress)
+        global h
+        global w
+        h = im.size[1]
+        w = im.size[0]
+        global image_window
+        image_window = ttk.Frame(progress_frame, width=w, height=h)
+        image_window.pack()
+        global canvas
+        canvas = Canvas(image_window, width=w, height=h)
+        global img
+        global image_container
+        try:
+            img = PhotoImage(file=progress)
+        except:
+            image = Image.new('RGB', (512, 512), (255, 255, 255))
+            image.save(progress)
+        image_container = canvas.create_image(0,0, anchor="nw",image=img)
+        canvas.pack()
+
+# Function to refresh the image in the GUI
+def refresh_image():
+    global is_running
+    updater()
+    try:
+        if thread.is_alive():
+            is_running = True
+            try:
+                im = Image.open(sample)
+                global h
+                global w
+                if h != im.size[1] or w != im.size[0]:
+                    h = im.size[1]
+                    w = im.size[0]
+                    image_window.config(width=w, height=h)
+                global img
+                global image_container
+                global canvas
+                img = PhotoImage(file='./out/'+batch_name+'/samples/00000.png')
+                canvas.config(width=w, height=h)
+                canvas.itemconfig(image_container, image = img)
+                canvas.pack()
+                global has_run
+                has_run = True
+            except:
+                pass
+        else:
+            is_running = False
+            try:
+                shutil.copyfile(sample, progress)
+                im = Image.open(progress)
+                if h != im.size[1] or w != im.size[0]:
+                    h = im.size[1]
+                    w = im.size[0]
+                    image_window.config(width=w, height=h)
+                img = PhotoImage(file=progress)
+                canvas.config(width=w, height=h)
+                canvas.itemconfig(image_container, image = img)
+                canvas.pack()
+            except:
+                pass
+    except:
+        is_running = False
+        try:
+            shutil.copyfile(sample, progress)
+            im = Image.open(progress)
+            if h != im.size[1] or w != im.size[0]:
+                h = im.size[1]
+                w = im.size[0]
+                image_window.config(width=w, height=h)
+            img = PhotoImage(file=progress)
+            canvas.config(width=w, height=h)
+            canvas.itemconfig(image_container, image = img)
+            canvas.pack()
+        except:
+            pass
+
+def updater():
+    window.after(1000, refresh_image)
 
 def get_int_or_rdm(x):
     # Check if str is random or if integer
@@ -485,6 +604,8 @@ def get_int_or_rdm(x):
 
 set_variables()
 draw_main_window()
+show_image()
+updater()
 
 
 mainloop()
