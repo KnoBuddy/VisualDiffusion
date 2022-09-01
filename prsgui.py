@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk
-from tkinter import messagebox
 import collections
+from types import SimpleNamespace
 import json5 as json
 import os
 import sys
@@ -10,7 +10,6 @@ import shutil
 import threading
 import shlex
 from PIL import Image
-from PIL import ImageTk
 
 
 # File Names
@@ -42,6 +41,7 @@ def load_json_file():
         with open(default_settings_file, 'r') as f:
             default_settings = json.load(f)
             json_set = default_settings
+    json_set = SimpleNamespace(**json_set)
 
 def load_txt_file():
     global prompt_list
@@ -58,7 +58,6 @@ def load_txt_file():
                     prompt_list[i] = k.strip()
                     batches_list[i] = int(v)
                     i += 1
-                print(prompt_list)
                 print("Prompts loaded", file = sys.stdout)
         except:
             print("Error loading prompts.txt", file = sys.stdout)
@@ -73,10 +72,10 @@ def set_variables():
     global steps
     global scale
     global seed
+    global frozen_seed
     global n_batches
-    global n_samples
     global n_iter
-    global n_rows
+    global variance
     global init_image
     global init_strength
     global gobig_maximize
@@ -86,39 +85,47 @@ def set_variables():
     global from_file
     global cool_down
     global use_jpg
+    global save_settings
     global gobig
     global prompts_file
     global json_set
     # Set Variables
     # batch_name, width, height, steps, scale, seed, 
-    # n_batches, n_samples, n_iter, n_rows, init_image, init_strength,
+    # n_batches, n_iter, init_image, init_strength,
     # gobig_maximize, gobig_overlap, method, eta, from_file, cool_down
     load_txt_file()
     load_json_file()
-    batch_name = json_set['batch_name']
-    width = json_set['width']
-    height = json_set['height']
-    steps = json_set['steps']
-    scale = json_set['scale']
-    seed = json_set['seed']
-    n_batches = json_set['n_batches']
-    n_samples = json_set['n_samples']
-    n_iter = json_set['n_iter']
-    n_rows = json_set['n_rows']
-    init_image = json_set['init_image']
-    init_strength = json_set['init_strength']
-    gobig_maximize = json_set['gobig_maximize']
-    gobig_overlap = json_set['gobig_overlap']
-    eta = json_set['eta']
-    from_file = json_set['from_file']
-    cool_down = json_set['cool_down']
-    use_jpg = json_set['use_jpg']
+    batch_name = json_set.batch_name
+    width = json_set.width
+    height = json_set.height
+    steps = json_set.steps
+    scale = json_set.scale
+    seed = json_set.seed
+    n_batches = json_set.n_batches
+    n_iter = json_set.n_iter
+    init_image = json_set.init_image
+    init_strength = json_set.init_strength
+    gobig_maximize = json_set.gobig_maximize
+    gobig_overlap = json_set.gobig_overlap
+    method = json_set.method
+    eta = json_set.eta
+    from_file = json_set.from_file
+    cool_down = json_set.cool_down
+    use_jpg = json_set.use_jpg
     try:
-        gobig = json_set['gobig']
+        frozen_seed = json_set.frozen_seed
+        save_settings = json_set.save_settings
+        variance = json_set.variance
+    except:
+        frozen_seed = False
+        save_settings = False
+        variance = 0.0
+    try:
+        gobig = json_set.gobig
     except:
         gobig = False
     try:
-        method = json_set['method']
+        method = json_set.method
     except:
         method = 'k_dpm_2_ancestral'
 
@@ -173,10 +180,13 @@ def draw_basic():
     global gobig_maximize_str
     global gobig_overlap_entry
     global method_str
-    global eta_entry
+    global n_iter_entry
     global cool_down_entry
     global use_jpg_str
     global gobig_str
+    global variance_str
+    global save_settings_str
+    global frozen_seed_str
 
     # Draw Basic Settings Frame
     basic_settings_frame = ttk.Frame(main_frame, style='TFrame')
@@ -227,6 +237,13 @@ def draw_basic():
     n_batches_label.grid(row=1, column=0, sticky=NW)
     n_batches_entry = Entry(basic_settings_entry_frame, textvariable=n_batches_str)
     n_batches_entry.grid(row=1, column=1, sticky=NW)
+    # Draw Variance Entry
+    variance_str = StringVar()
+    variance_str.set(variance)
+    variance_label = ttk.Label(basic_settings_entry_frame, text='Variance:')
+    variance_label.grid(row=1, column=9, sticky=NW)
+    variance_entry = Entry(basic_settings_entry_frame, textvariable=variance_str)
+    variance_entry.grid(row=1, column=10, sticky=NW)
     # Draw Scale Entry
     scale_str = StringVar()
     scale_str.set(scale)
@@ -234,13 +251,13 @@ def draw_basic():
     scale_label.grid(row=1, column=4, sticky=NW)
     scale_entry = Entry(basic_settings_entry_frame, textvariable=scale_str)
     scale_entry.grid(row=1, column=5, sticky=NW)
-    # Draw Seed Entry
-    seed_str = StringVar()
-    seed_str.set(seed)
-    seed_label = ttk.Label(basic_settings_entry_frame, text='Seed:')
-    seed_label.grid(row=1, column=2, sticky=NW)
-    seed_entry = Entry(basic_settings_entry_frame, textvariable=seed_str)
-    seed_entry.grid(row=1, column=3, sticky=NW)
+    # Draw n_iter Entry
+    n_iter_str = StringVar()
+    n_iter_str.set(n_iter)
+    n_iter_label = ttk.Label(basic_settings_entry_frame, text='n_iter:')
+    n_iter_label.grid(row=1, column=2, sticky=NW)
+    n_iter_entry = Entry(basic_settings_entry_frame, textvariable=n_iter_str)
+    n_iter_entry.grid(row=1, column=3, sticky=NW)
     # Draw gobig Checkbutton
     gobig_str = BooleanVar()
     gobig_str.set(gobig)
@@ -266,13 +283,13 @@ def draw_basic():
     method_label.grid(row=0, column=9, sticky=NW)
     method_optionmenu = OptionMenu(basic_settings_entry_frame, method_str, 'k_lms', 'k_dpm_2_ancestral', 'k_dpm_2', 'k_heun', 'k_euler_ancestral', 'k_euler', 'ddim')
     method_optionmenu.grid(row=0, column=10, sticky=NW)
-    # Draw eta Entry
-    eta_str = StringVar()
-    eta_str.set(eta)
-    eta_label = ttk.Label(basic_settings_entry_frame, text='ETA:')
-    eta_label.grid(row=2, column=4, sticky=NW)
-    eta_entry = Entry(basic_settings_entry_frame, textvariable=eta_str)
-    eta_entry.grid(row=2, column=5, sticky=NW)
+    # Draw seed Entry
+    seed_str = StringVar()
+    seed_str.set(seed)
+    seed_label = ttk.Label(basic_settings_entry_frame, text='seed:')
+    seed_label.grid(row=2, column=4, sticky=NW)
+    seed_entry = Entry(basic_settings_entry_frame, textvariable=seed_str)
+    seed_entry.grid(row=2, column=5, sticky=NW)
     # Draw cool_down Entry
     cool_down_str = StringVar()
     cool_down_str.set(cool_down)
@@ -284,7 +301,17 @@ def draw_basic():
     use_jpg_str = BooleanVar()
     use_jpg_str.set(use_jpg)
     use_jpg_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='Use JPG', variable=use_jpg_str)
-    use_jpg_checkbutton.grid(row=2, column=8, sticky=NW)
+    use_jpg_checkbutton.grid(row=2, column=10, sticky=NW)
+    # Draw save_settings Checkbutton
+    save_settings_str = BooleanVar()
+    save_settings_str.set(save_settings)
+    save_settings_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='Save Settings', variable=save_settings_str)
+    save_settings_checkbutton.grid(row=2, column=8, sticky=NW)
+    # Draw frozen_seed Checkbutton
+    frozen_seed_str = BooleanVar()
+    frozen_seed_str.set(frozen_seed)
+    frozen_seed_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='Frozen Seed', variable=frozen_seed_str)
+    frozen_seed_checkbutton.grid(row=2, column=9, sticky=NW)
     # Draw Batch Name Entry
     batch_name_str = StringVar()
     batch_name_str.set(batch_name)
@@ -369,24 +396,24 @@ def save_prompts():
     for i in range(len(prompt_list)):
         prompt_list[i] = prompt[i].get()
     batch_name = batch_name_str.get()
-    n_iter = 1
     width = int(width_entry.get())
     height = int(height_entry.get())
     steps = int(steps_entry.get())
     scale = float(scale_entry.get())
+    frozen_seed = bool(frozen_seed_str.get())
     seed = get_int_or_rdm(seed_entry.get())
     n_batches = 1
-    n_samples = 1
-    n_rows = 1
+    n_iter = int(n_iter_entry.get())
+    variance = float(variance_str.get())
     init_image = None
     init_strength = 0.62
     gobig_maximize = bool(gobig_maximize_str.get())
     gobig_overlap = int(gobig_overlap_entry.get())
     method = str(method_str.get())
-    eta = float(eta_entry.get())
     from_file = 'prompts.txt'
     cool_down = float(cool_down_entry.get())
     use_jpg = bool(use_jpg_str.get())
+    save_settings = bool(save_settings_str.get())
     gobig = bool(gobig_str.get())
 
     # Save Prompt List to prompt.txt
@@ -404,7 +431,10 @@ def save_prompts():
         f.close()
     # Save Settings to prompt_N.json
     i = 0
-    json_set = {'prompt': list(prompt_list), 'batch_name': batch_name, 'width': width, 'height': height, 'steps': steps, 'scale': scale, 'seed': seed, 'n_batches': n_batches, 'n_samples': n_samples, 'n_iter': n_iter, 'n_rows': n_rows, 'init_image': init_image, 'init_strength': init_strength, 'gobig_maximize': gobig_maximize, 'gobig_overlap': gobig_overlap, 'method': method, 'eta': eta, 'from_file': from_file, 'cool_down': cool_down, 'use_jpg': use_jpg, 'gobig': gobig}
+    json_set = {'prompt': prompt_list, 'batch_name': batch_name, 'width': width, 'height': height, 'steps': steps, 'scale': scale, 'seed': seed, 'n_batches': n_batches, 'n_iter': n_iter, 'init_image': init_image, 'init_strength': init_strength, 'gobig_maximize': gobig_maximize, 'gobig_overlap': gobig_overlap, 'method': method, 'eta': eta, 'from_file': from_file, 'cool_down': cool_down, 'use_jpg': use_jpg, 'gobig': gobig, 'variance': variance, 'frozen_seed': frozen_seed, 'save_settings': save_settings}
+    with open('prompt_'+str(i)+'.json', 'w+') as f:
+        json.dump(json_set, f)
+        f.close()
     with open('./settings/'+gui_settings, 'w+', encoding='utf_8') as f:
         json.dump(json_set, f, ensure_ascii=False, indent=4)
     window.title('VisualDiffusion (a GUI for ProgRock-Stable): '+batch_name+' '+gui_settings)
@@ -440,7 +470,7 @@ def new_prompt():
     global prompt_batches_frame
     prompt_list[len(prompt_list)] = ''
     prompt[len(prompt_list)-1] = StringVar()
-    prompt[len(prompt_list)-1].set(default_prompt)
+    prompt[len(prompt_list)-1].set(prompt_entry[len(prompt_list)-2].get())
     prompt_batches[len(prompt_list)-1] = IntVar()
     prompt_batches[len(prompt_list)-1].set(1)
     prompt_label[len(prompt_list)-1] = ttk.Label(prompt_text_frame, text='Prompt ' + str(len(prompt_list)) + ':' , width=150)
@@ -492,6 +522,9 @@ def run_prs():
     save_prompts()
     # Run PRS
     global gobig
+    global is_running
+    global thread
+    global p
     gobig = bool(gobig_str.get())
     if gobig == True:
         print('Running PRS with GoBigMode')
@@ -499,12 +532,15 @@ def run_prs():
     else:
         print('Running ProgRock-Stable')
         p = subprocess.Popen(shlex.split('python prs.py -s ./settings/'+gui_settings))
+    p.wait()
 
 def show_image():
     global sample
     sample = './out/'+batch_name+'/samples/00000.png'
-    if os.path.isfile(sample):
-        print("Showing Image")
+    if os.path.exists(sample):
+        pass
+    else:
+        os.makedirs('./out/'+batch_name+'/samples/')
     if is_running == True:
         return
     else:
@@ -539,9 +575,11 @@ def show_image():
 # Function to refresh the image in the GUI
 def refresh_image():
     global is_running
+    global p
     updater()
+    # Check if thread is still running
     try:
-        if thread.is_alive():
+        if p.returncode == None:
             is_running = True
             try:
                 im = Image.open(sample)
@@ -578,7 +616,6 @@ def refresh_image():
             except:
                 pass
     except:
-        is_running = False
         try:
             shutil.copyfile(sample, progress)
             im = Image.open(progress)
