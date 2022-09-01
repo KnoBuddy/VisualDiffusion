@@ -121,7 +121,7 @@ def set_variables():
     except:
         frozen_seed = False
         save_settings = False
-        variance = 0.0
+        variance = 0.1
     try:
         gobig = json_set.gobig
     except:
@@ -158,7 +158,7 @@ def draw_main_window():
     
     # Draw Master Frame
     master_frame = ttk.Frame(window, style='TFrame')
-    master_frame.pack(side=RIGHT, fill=BOTH, expand=True)
+    master_frame.pack(fill=BOTH, expand=True)
 
     # Draw Main Frame
     main_frame = ttk.Frame(master_frame, style='TFrame')
@@ -169,6 +169,7 @@ def draw_main_window():
     draw_basic()
     draw_prompts()
     draw_progress()
+    draw_shell()
 
 def draw_basic():
     global batch_name_str
@@ -392,6 +393,14 @@ def draw_progress():
     progress_frame = ttk.Frame(master_frame, style='Green.TFrame')
     progress_frame.pack(side=RIGHT, fill='both', expand=True)
 
+def draw_shell():
+    global shell_frame
+
+    # Draw Shell Frame
+    shell_frame = ttk.Frame(master_frame, style='Green.TFrame')
+    shell_frame.pack(side=BOTTOM, fill=BOTH, expand=True)
+
+
 def save_prompts(save):
     cleanup()
     # Get Entry Boxes and save to prompt_list
@@ -535,6 +544,7 @@ def run_prs():
     global is_running
     global thread
     global p
+    global term_text
     gobig = bool(gobig_str.get())
     if gobig == True:
         print('Running PRS with GoBigMode')
@@ -542,21 +552,22 @@ def run_prs():
     else:
         print('Running ProgRock-Stable')
         p = subprocess.Popen(shlex.split('python prs.py --interactive'))
-    p.wait()
 
 def show_image():
     global sample
     try:
         list_of_files = glob.glob('./out/'+batch_name+'/*.png') # * means all if need specific format then *.csv
         sample = max(list_of_files, key=os.path.getctime)
-        print(sample)
         if os.path.exists(sample):
             pass
         else:
             os.makedirs('./out/'+batch_name+'/')
     except:
         print("No Sample")
-        os.makedirs('./out/'+batch_name+'/')
+        try:
+            os.makedirs('./out/'+batch_name+'/')
+        except:
+            pass
         image = Image.new('RGB', (512, 512), (255, 255, 255))
         image.save(sample)
         image.save(progress)
@@ -666,13 +677,52 @@ def get_int_or_rdm(x):
     else:
         return 'random'
 
+#Auto Scrolling Shell Text box class
+class Redirect():
+
+    def __init__(self, widget, autoscroll=True):
+        self.widget = widget
+        self.autoscroll = autoscroll
+
+    def write(self, text):
+        self.widget.insert('end', text)
+        if self.autoscroll:
+            self.widget.see("end")  # autoscroll
+
+    def flush(self):
+        pass
+    
+    
 set_variables()
 draw_main_window()
 start_thread()
 show_image()
 updater()
 
+# Run Frame
+# Create scrolling text output from the shell
+term_frame = ttk.Frame(shell_frame, height=150)
+term_frame.pack_propagate(0)
+term_frame.pack(expand=True, fill='both')
+
+term_text = Text(term_frame, height=150)
+term_text.pack(side='left', fill='both', expand=True)
+
+scrollbar = Scrollbar(term_frame)
+scrollbar.pack(side='right', fill='y')
+
+term_text['yscrollcommand'] = scrollbar.set
+scrollbar['command'] = term_text.yview
+
+old_stdout = sys.stdout    
+sys.stdout = Redirect(term_text)
+
+
+
+
 
 window.mainloop()
+
+sys.stdout = old_stdout
 
 p.kill()
