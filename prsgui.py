@@ -10,11 +10,13 @@ import shutil
 import threading
 import shlex
 from PIL import Image
+import glob
 
 
 # File Names
 prompts_file = 'prompts.txt'
 gui_settings = 'gui_settings.json'
+job_file = 'job_cuda_0.json'
 default_settings_file = 'settings.json'
 sample = './out/Default/00000.png'
 progress = 'progress.png'
@@ -197,12 +199,12 @@ def draw_basic():
     basic_buttons_frame.pack(side=TOP, fill='both', expand=True)
 
     # Draw Save Button
-    save_button = ttk.Button(basic_buttons_frame, text='Save', command=save_prompts)
+    save_button = ttk.Button(basic_buttons_frame, text='Save', command=lambda: save_prompts(True))
     save_button.pack(side=LEFT, fill='both', expand=True)
 
     # Draw Run Button
 
-    run_button = ttk.Button(basic_buttons_frame, text='Run', command=start_thread)
+    run_button = ttk.Button(basic_buttons_frame, text='Run', command=lambda: save_prompts(False))
     run_button.pack(side=LEFT, fill='both', expand=True)
 
     # Draw Basic Settings Entry Frame
@@ -390,7 +392,7 @@ def draw_progress():
     progress_frame = ttk.Frame(master_frame, style='Green.TFrame')
     progress_frame.pack(side=RIGHT, fill='both', expand=True)
 
-def save_prompts():
+def save_prompts(save):
     cleanup()
     # Get Entry Boxes and save to prompt_list
     for i in range(len(prompt_list)):
@@ -435,8 +437,17 @@ def save_prompts():
     with open('prompt_'+str(i)+'.json', 'w+') as f:
         json.dump(json_set, f)
         f.close()
-    with open('./settings/'+gui_settings, 'w+', encoding='utf_8') as f:
-        json.dump(json_set, f, ensure_ascii=False, indent=4)
+    print('Saved Prompts')
+    print('Saved Settings')
+    if save == True:
+        with open('./settings/'+gui_settings, 'w+', encoding='utf_8') as f:
+            json.dump(json_set, f, ensure_ascii=False, indent=4)
+    else:
+        with open('./settings/'+gui_settings, 'w+', encoding='utf_8') as f:
+            json.dump(json_set, f, ensure_ascii=False, indent=4)
+        with open('./'+job_file, 'w+', encoding='utf_8') as f:
+            json.dump(json_set, f, ensure_ascii=False, indent=4)
+        print('Running job')
     window.title('VisualDiffusion (a GUI for ProgRock-Stable): '+batch_name+' '+gui_settings)
 
 
@@ -519,7 +530,6 @@ def start_thread():
         print("Already Running")
 
 def run_prs():
-    save_prompts()
     # Run PRS
     global gobig
     global is_running
@@ -528,54 +538,68 @@ def run_prs():
     gobig = bool(gobig_str.get())
     if gobig == True:
         print('Running PRS with GoBigMode')
-        p = subprocess.Popen(shlex.split('python prs.py -s ./settings/'+gui_settings+' --gobig'))
+        p = subprocess.Popen(shlex.split('python prs.py --gobig --interactive'))
     else:
         print('Running ProgRock-Stable')
-        p = subprocess.Popen(shlex.split('python prs.py -s ./settings/'+gui_settings))
+        p = subprocess.Popen(shlex.split('python prs.py --interactive'))
     p.wait()
 
 def show_image():
     global sample
-    sample = './out/'+batch_name+'/samples/00000.png'
-    if os.path.exists(sample):
-        pass
-    else:
-        os.makedirs('./out/'+batch_name+'/samples/')
-    if is_running == True:
-        return
-    else:
-        try:
-            shutil.copyfile(sample, progress)
-        except:
-            print("No Sample")
-            image = Image.new('RGB', (512, 512), (255, 255, 255))
-            image.save(sample)
-            image.save(progress)
-        master_frame.pack()
-        im = Image.open(progress)
-        global h
-        global w
-        h = im.size[1]
-        w = im.size[0]
-        global image_window
-        image_window = ttk.Frame(progress_frame, width=w, height=h)
-        image_window.pack()
-        global canvas
-        canvas = Canvas(image_window, width=w, height=h)
-        global img
-        global image_container
-        try:
-            img = PhotoImage(file=progress)
-        except:
-            image = Image.new('RGB', (512, 512), (255, 255, 255))
-            image.save(progress)
-        image_container = canvas.create_image(0,0, anchor="nw",image=img)
-        canvas.pack()
+    try:
+        list_of_files = glob.glob('./out/'+batch_name+'/*.png') # * means all if need specific format then *.csv
+        sample = max(list_of_files, key=os.path.getctime)
+        print(sample)
+        if os.path.exists(sample):
+            pass
+        else:
+            os.makedirs('./out/'+batch_name+'/')
+    except:
+        print("No Sample")
+        os.makedirs('./out/'+batch_name+'/')
+        image = Image.new('RGB', (512, 512), (255, 255, 255))
+        image.save(sample)
+        image.save(progress)
+    try:
+        shutil.copyfile(sample, progress)
+    except:
+        print("No Sample")
+        image = Image.new('RGB', (512, 512), (255, 255, 255))
+        image.save(sample)
+        image.save(progress)
+    master_frame.pack()
+    im = Image.open(progress)
+    global h
+    global w
+    h = im.size[1]
+    w = im.size[0]
+    global image_window
+    image_window = ttk.Frame(progress_frame, width=w, height=h)
+    image_window.pack()
+    global canvas
+    canvas = Canvas(image_window, width=w, height=h)
+    global img
+    global image_container
+    try:
+        img = PhotoImage(file=progress)
+    except:
+        image = Image.new('RGB', (512, 512), (255, 255, 255))
+        image.save(progress)
+    image_container = canvas.create_image(0,0, anchor="nw",image=img)
+    canvas.pack()
 
 # Function to refresh the image in the GUI
 def refresh_image():
     global is_running
     global p
+    try:
+        list_of_files = glob.glob('./out/'+batch_name+'/*.png') # * means all if need specific format then *.csv
+        sample = max(list_of_files, key=os.path.getctime)
+    except:
+        print("No Sample")
+        image = Image.new('RGB', (512, 512), (255, 255, 255))
+        image.save(sample)
+        image.save(progress)
     updater()
     # Check if thread is still running
     try:
@@ -592,7 +616,7 @@ def refresh_image():
                 global img
                 global image_container
                 global canvas
-                img = PhotoImage(file='./out/'+batch_name+'/samples/00000.png')
+                img = PhotoImage(file=sample)
                 canvas.config(width=w, height=h)
                 canvas.itemconfig(image_container, image = img)
                 canvas.pack()
@@ -644,8 +668,11 @@ def get_int_or_rdm(x):
 
 set_variables()
 draw_main_window()
+start_thread()
 show_image()
 updater()
 
 
-mainloop()
+window.mainloop()
+
+p.kill()
