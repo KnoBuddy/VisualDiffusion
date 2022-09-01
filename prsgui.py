@@ -431,7 +431,7 @@ def save_prompts():
         f.close()
     # Save Settings to prompt_N.json
     i = 0
-    json_set = {'prompt': prompt_list, 'batch_name': batch_name, 'width': width, 'height': height, 'steps': steps, 'scale': scale, 'seed': seed, 'n_batches': n_batches, 'n_iter': n_iter, 'init_image': init_image, 'init_strength': init_strength, 'gobig_maximize': gobig_maximize, 'gobig_overlap': gobig_overlap, 'method': method, 'eta': eta, 'from_file': from_file, 'cool_down': cool_down, 'use_jpg': use_jpg, 'gobig': gobig, 'variance': variance, 'frozen_seed': frozen_seed, 'save_settings': save_settings}
+    json_set = {'prompt': prompt_list[0], 'batch_name': batch_name, 'width': width, 'height': height, 'steps': steps, 'scale': scale, 'seed': seed, 'n_batches': n_batches, 'n_iter': n_iter, 'init_image': init_image, 'init_strength': init_strength, 'gobig_maximize': gobig_maximize, 'gobig_overlap': gobig_overlap, 'method': method, 'eta': eta, 'from_file': from_file, 'cool_down': cool_down, 'use_jpg': use_jpg, 'gobig': gobig, 'variance': variance, 'frozen_seed': frozen_seed, 'save_settings': save_settings}
     with open('prompt_'+str(i)+'.json', 'w+') as f:
         json.dump(json_set, f)
         f.close()
