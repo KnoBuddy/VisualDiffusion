@@ -264,12 +264,12 @@ def draw_basic():
     gobig_str = BooleanVar()
     gobig_str.set(gobig)
     gobig_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='Gobig', variable=gobig_str)
-    gobig_checkbutton.grid(row=0, column=8, sticky=NW)
+    gobig_checkbutton.grid(row=0, column=7, sticky=NW)
     # Maximize Checkbutton
     gobig_maximize_str = BooleanVar()
     gobig_maximize_str.set(gobig_maximize)
     gobig_maximize_checkbutton = ttk.Checkbutton(basic_settings_entry_frame, text='GoBig Maximize', variable=gobig_maximize_str)
-    gobig_maximize_checkbutton.grid(row=0, column=7, sticky=NW)
+    gobig_maximize_checkbutton.grid(row=0, column=8, sticky=NW)
     # Draw gobig_overlap Entry
     gobig_overlap_str = StringVar()
     gobig_overlap_str.set(gobig_overlap)
