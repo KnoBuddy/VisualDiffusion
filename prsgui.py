@@ -12,7 +12,6 @@ import shlex
 from PIL import Image
 import glob
 
-
 # File Names
 prompts_file = 'prompts.txt'
 gui_settings = 'gui_settings.json'
@@ -692,7 +691,6 @@ class Redirect():
     def flush(self):
         pass
     
-    
 set_variables()
 draw_main_window()
 start_thread()
@@ -716,10 +714,6 @@ scrollbar['command'] = term_text.yview
 
 old_stdout = sys.stdout    
 sys.stdout = Redirect(term_text)
-
-
-
-
 
 window.mainloop()
 
