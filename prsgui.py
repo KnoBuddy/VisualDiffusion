@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import scrolledtext
 import collections
 from types import SimpleNamespace
 import json5 as json
@@ -12,8 +13,9 @@ import shlex
 from PIL import Image
 import glob
 
+
 # File Names
-prompts_file = 'prompts.txt'
+prompts_file = './settings/prompts.txt'
 gui_settings = 'gui_settings.json'
 job_file = 'job_cuda_0.json'
 default_settings_file = 'settings.json'
@@ -21,7 +23,16 @@ sample = './out/Default/00000.png'
 progress = 'progress.png'
 prd = 'prd.py'
 
-default_prompt = "A beautiful painting of a Castle in the Scottish Highlands, underexposed and overcast, by Banksy, Beeple, and Bob Ross, trending on ArtStation, vibrant"
+default_prompt =    ["A beautiful painting of a Castle in the Scottish Highlands:10 ",
+                    "underexposed and overcast:7.5 ", 
+                    "by Banksy:3 ", 
+                    "Beeple:6 ",
+                    "and Bob Ross:10 ", 
+                    "trending on ArtStation:15 ",
+                    "vibrant:5 ", 
+                    "blur:-2 ", 
+                    "film grain:-1 ", 
+                    "out of focus:-1 "]
 
 # First Run Check Variables
 is_running = False
@@ -63,7 +74,18 @@ def load_txt_file():
         except:
             print("Error loading prompts.txt", file = sys.stdout)
             print("Loading from Defaults...", file = sys.stdout)
-            prompt_list[0] = default_prompt
+            
+            a = f.split(':')
+            t = 0
+            # Find the first space after the colon
+            # and remove the space and everything before it
+            del a[-1:]
+            for i in a:
+                b = i.find(' ')
+                a[t] = i[b+1:]
+                t += 1
+            temp = '\n'.join([i for i in a])
+            prompt_list[0] = temp
 
 def set_variables():
     global prompt
@@ -108,6 +130,7 @@ def set_variables():
     init_strength = json_set.init_strength
     gobig_maximize = json_set.gobig_maximize
     gobig_overlap = json_set.gobig_overlap
+    method = json_set.method
     eta = json_set.eta
     from_file = json_set.from_file
     cool_down = json_set.cool_down
@@ -324,6 +347,7 @@ def draw_basic():
 def draw_prompts():
     global prompt_list
     global batches_list
+    global scroll
     global prompt
     global prompt_batches
     global prompt_label
@@ -363,25 +387,27 @@ def draw_prompts():
     prompt_text_batches_frame.pack(side=RIGHT, fill='both', expand=True)
 
     # Draw Text Entry Box(es)
+    scroll = {}
     prompt = {}
     prompt_label = {}
     prompt_entry = {}
     prompt_batches = {}
     prompt_batches_label = {}
     prompt_batches_entry = {}
-
+    
     for i in range(len(prompt_list)):
         prompt[i] = StringVar()
         prompt[i].set(prompt_list[i])
-        prompt_label[i] = Label(prompt_text_frame, text='Prompt '+str(i+1)+':', anchor=NW)
+        prompt_label[i] = Label(prompt_text_frame, text='Prompt '+str(i+1)+':', width=125, anchor=NW)
         prompt_label[i].pack(side=TOP, fill='both', expand=True)
-        prompt_entry[i] = Entry(prompt_text_frame, textvariable=prompt[i], width=150)
+        prompt_entry[i] = scrolledtext.ScrolledText(prompt_text_frame, wrap=WORD, height=8)
+        prompt_entry[i].insert(END, prompt[i].get())
         prompt_entry[i].pack(side=TOP, fill='both', expand=True)
         prompt_batches[i] = IntVar()
         prompt_batches[i].set(batches_list[i])
-        prompt_batches_label[i] = Label(prompt_text_batches_frame, text='Batches:', anchor=NW)
+        prompt_batches_label[i] = Label(prompt_text_batches_frame, text='Batches:', anchor=NW, width=10)
         prompt_batches_label[i].pack(side=TOP, fill='both', expand=True)
-        prompt_batches_entry[i] = Entry(prompt_text_batches_frame, textvariable=prompt_batches[i], width=10)
+        prompt_batches_entry[i] = Entry(prompt_text_batches_frame, textvariable=prompt_batches[i], width=8)
         prompt_batches_entry[i].pack(side=TOP, fill='both', expand=True)
 
 def draw_progress():
@@ -401,9 +427,11 @@ def draw_shell():
 
 def save_prompts(save):
     cleanup()
+    global from_file
     # Get Entry Boxes and save to prompt_list
     for i in range(len(prompt_list)):
-        prompt_list[i] = prompt[i].get()
+        prompt_list[i] = prompt_entry[i].get(1.0, END)
+        prompt_list[i] = prompt_list[i].replace('\n', ' ')
     batch_name = batch_name_str.get()
     width = int(width_entry.get())
     height = int(height_entry.get())
@@ -419,14 +447,14 @@ def save_prompts(save):
     gobig_maximize = bool(gobig_maximize_str.get())
     gobig_overlap = int(gobig_overlap_entry.get())
     method = str(method_str.get())
-    from_file = 'prompts.txt'
+    from_file = './settings/prompts.txt'
     cool_down = float(cool_down_entry.get())
     use_jpg = bool(use_jpg_str.get())
     save_settings = bool(save_settings_str.get())
     gobig = bool(gobig_str.get())
 
     # Save Prompt List to prompt.txt
-    with open('prompts.txt', 'w+') as f:
+    with open('./settings/prompts.txt', 'w+') as f:
         for i in range(len(prompt_list)):
             t = 0
             # Remove (, ),  and ' from prompt
@@ -452,7 +480,7 @@ def save_prompts(save):
     else:
         with open('./settings/'+gui_settings, 'w+', encoding='utf_8') as f:
             json.dump(json_set, f, ensure_ascii=False, indent=4)
-        with open('./'+job_file, 'w+', encoding='utf_8') as f:
+        with open(job_file, 'w+', encoding='utf_8') as f:
             json.dump(json_set, f, ensure_ascii=False, indent=4)
         print('Running job')
     window.title('VisualDiffusion (a GUI for ProgRock-Stable): '+batch_name+' '+gui_settings)
@@ -468,16 +496,18 @@ def delete_prompt():
     global prompt_text_frame
     del prompt_list[len(prompt_list)-1]
     prompt_label[len(prompt_list)].destroy()
-    prompt_entry[len(prompt_list)].destroy()
+    prompt_entry[len(prompt_list)].frame.destroy()
     prompt_batches_label[len(prompt_list)].destroy()
     prompt_batches_entry[len(prompt_list)].destroy()
     prompt_label.pop(len(prompt_list))
     prompt_entry.pop(len(prompt_list))
     prompt_batches_label.pop(len(prompt_list))
     prompt_batches_entry.pop(len(prompt_list))
+    prompt_text_frame.pack()
 
 def new_prompt():
     # Add New Prompt Label Entry Box
+    global scroll
     global prompt
     global prompt_list
     global prompt_label
@@ -486,19 +516,37 @@ def new_prompt():
     global prompt_batches_entry
     global prompt_text_frame
     global prompt_batches_frame
-    prompt_list[len(prompt_list)] = ''
-    prompt[len(prompt_list)-1] = StringVar()
-    prompt[len(prompt_list)-1].set(prompt_entry[len(prompt_list)-2].get())
-    prompt_batches[len(prompt_list)-1] = IntVar()
-    prompt_batches[len(prompt_list)-1].set(1)
-    prompt_label[len(prompt_list)-1] = ttk.Label(prompt_text_frame, text='Prompt ' + str(len(prompt_list)) + ':' , width=150)
-    prompt_label[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
-    prompt_entry[len(prompt_list)-1] = Entry(prompt_text_frame, textvariable=prompt[len(prompt_list)-1], width=150)
-    prompt_entry[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
-    prompt_batches_label[len(prompt_list)-1] = ttk.Label(prompt_text_batches_frame, text='Batches: ', width=10)
-    prompt_batches_label[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
-    prompt_batches_entry[len(prompt_list)-1] = Entry(prompt_text_batches_frame, textvariable=prompt_batches[len(prompt_list)-1], width=8)
-    prompt_batches_entry[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
+    if len(prompt_list) == 0:
+        prompt_list[0] = ''
+        prompt[0] = StringVar()
+        temp = '\n'.join([i for i in default_prompt])
+        prompt[0].set(temp)
+        prompt_batches[0] = IntVar()
+        prompt_batches[0].set(1)
+        prompt_label[0] = ttk.Label(prompt_text_frame, text='Prompt ' + str(len(prompt_list)) + ':' , width=125)
+        prompt_label[0].pack(side='top', fill='both', expand=True)
+        prompt_entry[0] = scrolledtext.ScrolledText(prompt_text_frame, wrap=WORD, height=8)
+        prompt_entry[0].insert(END, prompt[0].get())
+        prompt_entry[0].pack(side='top', fill='both', expand=True)
+        prompt_batches_label[0] = ttk.Label(prompt_text_batches_frame, text='Batches: ', width=10)
+        prompt_batches_label[0].pack(side='top', fill='both', expand=True)
+        prompt_batches_entry[0] = Entry(prompt_text_batches_frame, textvariable=prompt_batches[0], width=8)
+        prompt_batches_entry[0].pack(side='top', fill='both', expand=True)
+    else:
+        prompt_list[len(prompt_list)] = ''
+        prompt[len(prompt_list)-1] = StringVar()
+        prompt[len(prompt_list)-1].set(prompt_entry[len(prompt_list)-2].get(1.0, END))
+        prompt_batches[len(prompt_list)-1] = IntVar()
+        prompt_batches[len(prompt_list)-1].set(1)
+        prompt_label[len(prompt_list)-1] = ttk.Label(prompt_text_frame, text='Prompt ' + str(len(prompt_list)) + ':' , width=125)
+        prompt_label[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
+        prompt_entry[len(prompt_list)-1] = scrolledtext.ScrolledText(prompt_text_frame, wrap=WORD, height=8)
+        prompt_entry[len(prompt_list)-1].insert(END, prompt[len(prompt_list)-1].get())
+        prompt_entry[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
+        prompt_batches_label[len(prompt_list)-1] = ttk.Label(prompt_text_batches_frame, text='Batches: ', width=10)
+        prompt_batches_label[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
+        prompt_batches_entry[len(prompt_list)-1] = Entry(prompt_text_batches_frame, textvariable=prompt_batches[len(prompt_list)-1], width=8)
+        prompt_batches_entry[len(prompt_list)-1].pack(side='top', fill='both', expand=True)
 
 def cleanup():
     # Cleanup Prompt Text Frame
@@ -511,10 +559,10 @@ def cleanup():
     global prompt_text_frame
     global prompt_text_batches_frame
     for i in range(len(prompt_list)):
-        if prompt_entry[i].get() == '':
+        if prompt_entry[i].get(1.0, END) == '':
             if prompt_entry[i] == prompt_entry[len(prompt_entry)-1]:
                 prompt_label[i].destroy()
-                prompt_entry[i].destroy()
+                prompt_entry[i].frame.destroy()
                 prompt_batches_label[i].destroy()
                 prompt_batches_entry[i].destroy()
                 prompt_label.pop(i)
