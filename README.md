@@ -1,7 +1,8 @@
-# VisualDiffusion v0.2.0
+# VisualDiffusion v0.3.0 [NEW MAKEGUDPICS UPDATE](#new-makegudpics-update)
 A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Notebooks.
 
 [CLICK HERE FOR PROGROCK DIFFUSION](#instructions-for-using-visualdiffusion-with-progrockdiffusion) or [CLICK HERE FOR PROGROCK-STABLE](#instructions-for-using-visualdiffusion-with-progrock-stable)
+
 
 If you would like support me, the development of this GUI, or maybe you have a feature that you desperately want added, please consider supporting me and this software's development on my [Patreon](https://www.patreon.com/knobuddy).
 
@@ -9,6 +10,30 @@ If you would like support me, the development of this GUI, or maybe you have a f
 ```
 cd progrockdiffusion\visualdiffusion
 git pull
+```
+
+# NEW MAKEGUDPICS UPDATE
+
+![image](https://user-images.githubusercontent.com/64171756/189456416-bb601f28-6ada-49b3-b03e-a1a514cda51b.png)
+## Instructions 
+Install PRS and ensure it is working and cd into directory.Follow the [Instruction Here](https://github.com/lowfuel/progrock-stable).
+### Install the GUI
+```
+conda activate prs
+cd prs
+git clone https://github.com/KnoBuddy/visualdiffusion/
+```
+#### [Windows]
+```
+conda activate prs
+cd prs
+python visualdiffusion\makegudpics.py
+```
+#### [Linux/MacOS]
+```
+conda activate prs
+cd prs
+python3 visualdiffusion\makegudpics.py
 ```
 
 # Instructions for using VisualDiffusion with ProgRock-Stable
