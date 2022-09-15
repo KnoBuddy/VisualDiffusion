@@ -1,4 +1,4 @@
-# VisualDiffusion v0.3.2 [NEW MAKEGUDPICS UPDATE](#new-makegudpics-update)
+# VisualDiffusion v0.3.3 [NEW MAKEGUDPICS UPDATE](#new-makegudpics-update)
 A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Notebooks.
 
 [CLICK HERE FOR PROGROCK DIFFUSION](#instructions-for-using-visualdiffusion-with-progrockdiffusion) or [CLICK HERE FOR PROGROCK-STABLE](#instructions-for-using-visualdiffusion-with-progrock-stable)
