@@ -668,14 +668,17 @@ def refresh_image():
     global h
     global w
     updater()
-    if gobig_str.get() == True:
-        list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
-        sample = max(list_of_files, key=os.path.getctime)
-    else:
-        list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
-        # Remove item from list_of_files if it contains 'gobig'
-        list_of_files = [i for i in list_of_files if 'gobig' not in i]
-        sample = max(list_of_files, key=os.path.getctime)
+    try:
+        if gobig_str.get() == True:
+            list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+            sample = max(list_of_files, key=os.path.getctime)
+        else:
+            list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+            # Remove item from list_of_files if it contains 'gobig'
+            list_of_files = [i for i in list_of_files if 'gobig' not in i]
+            sample = max(list_of_files, key=os.path.getctime)
+    except:
+        return
     # Check if thread is still running
     if is_running == True:
         if p.returncode == None:
