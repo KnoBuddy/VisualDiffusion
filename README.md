@@ -3,13 +3,22 @@ A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Noteboo
 
 [CLICK HERE FOR PROGROCK DIFFUSION](#instructions-for-using-visualdiffusion-with-progrockdiffusion) or [CLICK HERE FOR PROGROCK-STABLE](#instructions-for-using-visualdiffusion-with-progrock-stable)
 
-
 If you would like support me, the development of this GUI, or maybe you have a feature that you desperately want added, please consider supporting me and this software's development on my [Patreon](https://www.patreon.com/knobuddy).
 
-# Instructions for loading VisualDiffusion
+# Instructions for running VisualDiffusion
+## [Windows]
 ```
+conda activate progrockdiffusion -or- conda activate prs
 cd progrockdiffusion -or- cd prs
+git clone https://github.com/KnoBuddy/visualdiffusion/
 python visualdiffusion\vd.py
+```
+## [Linux/MacOS]
+```
+conda activate progrockdiffusion -or- conda activate prs
+cd progrockdiffusion -or- cd prs
+git clone https://github.com/KnoBuddy/visualdiffusion/
+python3 visualdiffusion\vd.py
 ```
 This will open either PRS or PRD depending on what is installed. If PRS is installed it will ask which GUI you would like to use, PRSGUI or MakeGUDPics.
 
@@ -23,49 +32,15 @@ git pull
 
 ![image](https://user-images.githubusercontent.com/64171756/190328696-067e7e4a-b7c2-4aeb-a45b-0cad217a0442.png)
 ## Instructions 
-Install PRS and ensure it is working and cd into directory.Follow the [Instruction Here](https://github.com/lowfuel/progrock-stable).
-### Install the GUI
-```
-conda activate prs
-cd prs
-git clone https://github.com/KnoBuddy/visualdiffusion/
-```
-#### [Windows]
-```
-conda activate prs
-cd prs
-python visualdiffusion\vd.py
-```
-#### [Linux/MacOS]
-```
-conda activate prs
-cd prs
-python3 visualdiffusion\vd.py
-```
+Install PRS and ensure it is working and cd into directory. Follow the [Instructions Here](https://github.com/lowfuel/progrock-stable).
+
+Adjust the sliders according to how much you want that portion of the prompt to effect the image.
 
 # Instructions for using VisualDiffusion with ProgRock-Stable
 ![image](https://user-images.githubusercontent.com/64171756/187046564-6ce159f9-202b-4b9e-b21a-bbba50e4ad68.png)
 ## Install PRS
 
 Follow the [Instruction Here](https://github.com/lowfuel/progrock-stable).
-## Install the GUI
-```
-conda activate prs
-cd prs
-git clone https://github.com/KnoBuddy/visualdiffusion/
-```
-### [Windows]
-```
-conda activate prs
-cd prs
-python visualdiffusion\vd.py
-```
-### [Linux/MacOS]
-```
-conda activate prs
-cd prs
-python3 visualdiffusion\vd.py
-```
 ## Open the GUI
 
 Open up a command line window (shell) and activate the conda environment like normal, and then run prdgui.py, from within the prs folder (NOT FROM WITHIN THE VISUAL DIFFUSION FOLDER).
@@ -81,24 +56,6 @@ If you need to cancel the render, you will have to kill the shell window you use
 ## Install PRD
 
 Follow the [Instruction Here](https://github.com/lowfuel/progrockdiffusion).
-## Install the GUI
-```
-conda activate progrockdiffusion
-cd progrockdiffusion
-git clone https://github.com/KnoBuddy/visualdiffusion/
-```
-### [Windows]
-```
-conda activate progrockdiffusion
-cd progrockdiffusion
-python visualdiffusion\vd.py
-```
-### [Linux/MacOS]
-```
-conda activate progrockdiffusion
-cd progrockdiffusion
-python3 visualdiffusion\vd.py
-```
 ## Open the GUI
 
 Open up a command line window (shell) and activate the conda environment like normal, and then run prdgui.py, from within the progrockdiffusion folder (NOT FROM WITHIN THE VISUAL DIFFUSION FOLDER).
