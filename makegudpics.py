@@ -1,13 +1,11 @@
 from tkinter import *
 from tkinter import ttk
-from tkinter import scrolledtext
 from types import SimpleNamespace
 from PIL import Image
 import collections
 import json5 as json
 import os
 import subprocess
-import shutil
 import threading
 import shlex
 import glob
@@ -18,9 +16,7 @@ prompts_file = './settings/prompts.txt'
 gui_settings = 'gui_settings.json'
 job_file = 'job_cuda_0.json'
 default_settings_file = 'settings.json'
-sample = './out/Default/00000.png'
 
-progress = 'progress.png'
 
 default_prompt =    ["A very beautiful symmetric portrait of a :10.0 ",
                     "<Female|Female|Female|Male|Humanoid|Synth|Alien|Primitive>:9.0 ", 
@@ -75,7 +71,6 @@ def load_txt_file():
                     batches_list[i] = int(v)
                     i += 1
                 print("Prompts loaded")
-                
         except:
             print("Error loading prompts.txt")
             print("Loading from Defaults...")
@@ -227,11 +222,11 @@ def draw_main_window():
 
 def draw_basic():
     global batch_name_str
-    global width_entry
+    global width_scale
     global width_str
-    global height_entry
-    global steps_entry
-    global scale_entry
+    global height_scale
+    global steps_scale
+    global scale_scale
     global seed_entry
     global n_batches_entry
     global gobig_maximize_str
@@ -270,30 +265,30 @@ def draw_basic():
     width_str = StringVar()
     width_str.set(width)
     width_label = ttk.Label(basic_settings_entry_frame, text='Width:')
-    width_label.grid(row=0, column=0, sticky=NW)
-    width_entry = Entry(basic_settings_entry_frame, textvariable=width_str)
-    width_entry.grid(row=0, column=1, sticky=NW)
+    width_label.grid(row=0, column=2, sticky=NW)
+    width_scale = Scale(basic_settings_entry_frame, from_=256, to=1024, orient=HORIZONTAL, variable=width_str, resolution=64, length=118)
+    width_scale.grid(row=0, column=3,sticky=NW)
     # Draw Height Entry
     height_str = StringVar()
     height_str.set(height)
     height_label = ttk.Label(basic_settings_entry_frame, text='Height:')
-    height_label.grid(row=0, column=2, sticky=NW)
-    height_entry = Entry(basic_settings_entry_frame, textvariable=height_str)
-    height_entry.grid(row=0, column=3, sticky=NW)
+    height_label.grid(row=0, column=0, sticky=NW)
+    height_scale = Scale(basic_settings_entry_frame, from_=256, to=1024, orient=HORIZONTAL, variable=height_str, resolution=64, length=118)
+    height_scale.grid(row=0, column=1,sticky=NW)
     # Draw Steps Entry
     steps_str = StringVar()
     steps_str.set(steps)
     steps_label = ttk.Label(basic_settings_entry_frame, text='Steps:')
-    steps_label.grid(row=0, column=4, sticky=NW)
-    steps_entry = Entry(basic_settings_entry_frame, textvariable=steps_str)
-    steps_entry.grid(row=0, column=5, sticky=NW)
+    steps_label.grid(row=1, column=0, sticky=NW)
+    steps_scale = Scale(basic_settings_entry_frame, from_=15, to=100, orient=HORIZONTAL, variable=steps_str, resolution=5, length=118)
+    steps_scale.grid(row=1, column=1,sticky=NW)
     # Draw Batches Entry
     n_batches_str = StringVar()
     n_batches_str.set(n_batches)
     n_batches_label = ttk.Label(basic_settings_entry_frame, text='Batches:')
-    n_batches_label.grid(row=1, column=0, sticky=NW)
+    n_batches_label.grid(row=0, column=4, sticky=NW)
     n_batches_entry = Entry(basic_settings_entry_frame, textvariable=n_batches_str)
-    n_batches_entry.grid(row=1, column=1, sticky=NW)
+    n_batches_entry.grid(row=0, column=5, sticky=NW)
     # Draw Variance Entry
     variance_str = StringVar()
     variance_str.set(variance)
@@ -305,16 +300,16 @@ def draw_basic():
     scale_str = StringVar()
     scale_str.set(scale)
     scale_label = ttk.Label(basic_settings_entry_frame, text='Scale:')
-    scale_label.grid(row=1, column=4, sticky=NW)
-    scale_entry = Entry(basic_settings_entry_frame, textvariable=scale_str)
-    scale_entry.grid(row=1, column=5, sticky=NW)
+    scale_label.grid(row=1, column=2, sticky=NW)
+    scale_scale = Scale(basic_settings_entry_frame, from_=1.0, to=20.0, orient=HORIZONTAL, variable=scale_str, resolution=0.5, length=118)
+    scale_scale.grid(row=1, column=3,sticky=NW)
     # Draw n_iter Entry
     n_iter_str = StringVar()
     n_iter_str.set(n_iter)
     n_iter_label = ttk.Label(basic_settings_entry_frame, text='n_iter:')
-    n_iter_label.grid(row=1, column=2, sticky=NW)
+    n_iter_label.grid(row=1, column=4, sticky=NW)
     n_iter_entry = Entry(basic_settings_entry_frame, textvariable=n_iter_str)
-    n_iter_entry.grid(row=1, column=3, sticky=NW)
+    n_iter_entry.grid(row=1, column=5, sticky=NW)
     # Draw gobig Checkbutton
     gobig_str = BooleanVar()
     gobig_str.set(gobig)
@@ -393,8 +388,6 @@ def draw_prompts():
     global prompt_weight_label
     global prompt_weight_scale
     global prompt_text_weights_frame
-    
-    default_weight = 1
 
     # Draw Prompt Frame
     prompt_frame = ttk.Frame(main_frame, style='Green.TFrame')
@@ -443,9 +436,6 @@ def draw_prompts():
         prompt_weight_scale[i].pack(side=TOP, fill='both', expand=True)
 
 
-
-
-
 def draw_progress():
     global progress_frame
     
@@ -468,10 +458,10 @@ def save_prompts(save):
         prompt[i].set(prompt_entry[i].get())
         prompt_weight_str[i].set(prompt_weight_scale[i].get())
     batch_name = batch_name_str.get()
-    width = int(width_entry.get())
-    height = int(height_entry.get())
-    steps = int(steps_entry.get())
-    scale = float(scale_entry.get())
+    width = int(width_scale.get())
+    height = int(height_scale.get())
+    steps = int(steps_scale.get())
+    scale = float(scale_scale.get())
     frozen_seed = bool(frozen_seed_str.get())
     seed = get_int_or_rdm(seed_entry.get())
     n_batches = 1
@@ -629,119 +619,174 @@ def run_prs():
 
 def show_image():
     global sample
-    try:
-        list_of_files = glob.glob('./out/'+batch_name+'/*.png') # * means all if need specific format then *.csv
-        sample = max(list_of_files, key=os.path.getctime)
-        if os.path.exists(sample):
-            pass
-        else:
-            os.makedirs('./out/'+batch_name+'/')
-    except:
-        print("No Sample")
-        try:
-            os.makedirs('./out/'+batch_name+'/')
-        except:
-            pass
-        sample = './out/'+batch_name+'/sample.png'
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(sample)
-        image.save(progress)
-    try:
-        shutil.copyfile(sample, progress)
-    except:
-        print("No Sample")
-        sample = './out/'+batch_name+'/sample.png'
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(sample)
-        image.save(progress)
-    master_frame.pack()
-    im = Image.open(progress)
+    global current_img
     global h
     global w
-    h = im.size[1]
-    w = im.size[0]
+    global list_of_files
     global image_window
-    image_window = ttk.Frame(progress_frame, width=w, height=h)
-    image_window.pack()
     global canvas
-    canvas = Canvas(image_window, width=w, height=h)
-    global img
     global image_container
     try:
-        img = PhotoImage(file=progress)
+        if gobig_str.get() == True:
+            list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+            sample = max(list_of_files, key=os.path.getctime)
+        else:
+            list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+            # Remove item from list_of_files if it contains 'gobig'
+            list_of_files = [i for i in list_of_files if 'gobig' not in i]
+            sample = max(list_of_files, key=os.path.getctime)
     except:
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(progress)
-    image_container = canvas.create_image(0,0, anchor="nw",image=img)
+        try:
+            Image.new('RGB', (1,1), color = 'white').save('./out/'+batch_name+'/'+batch_name+'.png')
+            sample = './out/'+batch_name+'/'+batch_name+'.png'
+        except:
+            pass
+    master_frame.pack()
+    current_img = Image.open(sample)
+    wbase = 756
+    h = float(current_img.size[1])
+    w = float(current_img.size[0])
+    image_window = ttk.Frame(progress_frame, width=w, height=h)
+    image_window.pack()
+    if h > 756 or w > 756:
+        if w > h:
+            wbase = 756
+            wpercent = (wbase/w)
+            hsize = int(h*float(wpercent))
+            h = hsize
+            w = wbase
+        else:
+            hbase = 756
+            hpercent = (hbase/h)
+            wsize = int(w*float(hpercent))
+            h = hbase
+            w = wsize
+        current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
+        current_img.save(sample)
+    current_img = PhotoImage(file=sample, height=int(h), width=int(w))
+    canvas = Canvas(image_window, width=w, height=h)
+    image_container = canvas.create_image(0,0, anchor="nw",image=current_img)
+    canvas.config(width=w, height=h)
+    canvas.itemconfig(image_container, image = current_img)
     canvas.pack()
 
 # Function to refresh the image in the GUI
 def refresh_image():
     global is_running
     global p
-    try:
-        list_of_files = glob.glob('./out/'+batch_name+'/*.png') # * means all if need specific format then *.csv
-        sample = max(list_of_files, key=os.path.getctime)
-    except:
-        print("No Sample")
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(sample)
-        image.save(progress)
+    global current_img
+    global sample
+    global list_of_files
     updater()
+    if gobig_str.get() == True:
+        list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+        sample = max(list_of_files, key=os.path.getctime)
+    else:
+        list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+        # Remove item from list_of_files if it contains 'gobig'
+        list_of_files = [i for i in list_of_files if 'gobig' not in i]
+        sample = max(list_of_files, key=os.path.getctime)
     # Check if thread is still running
-    try:
+    if is_running == True:
         if p.returncode == None:
-            is_running = True
             try:
-                im = Image.open(sample)
                 global h
                 global w
-                if h != im.size[1] or w != im.size[0]:
-                    h = im.size[1]
-                    w = im.size[0]
-                    image_window.config(width=w, height=h)
-                global img
                 global image_container
                 global canvas
-                img = PhotoImage(file=sample)
-                canvas.config(width=w, height=h)
-                canvas.itemconfig(image_container, image = img)
-                canvas.pack()
                 global has_run
+                current_img = Image.open(sample)
+                if h > 756 or w > 756:
+                    if w > h:
+                        wbase = 756
+                        wpercent = (wbase/w)
+                        hsize = int(h*float(wpercent))
+                        h = hsize
+                        w = wbase
+                    else:
+                        hbase = 756
+                        hpercent = (hbase/h)
+                        wsize = int(w*float(hpercent))
+                        h = hbase
+                        w = wsize
+                    current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
+                    current_img.save(sample)
+                current_img = PhotoImage(file=sample, height=int(h), width=int(w))
+                canvas.config(width=w, height=h)
+                canvas.itemconfig(image_container, image = current_img)
+                canvas.pack()
                 has_run = True
             except:
                 pass
-        else:
-            is_running = False
-            try:
-                shutil.copyfile(sample, progress)
-                im = Image.open(progress)
-                if h != im.size[1] or w != im.size[0]:
-                    h = im.size[1]
-                    w = im.size[0]
-                    image_window.config(width=w, height=h)
-                img = PhotoImage(file=progress)
-                canvas.config(width=w, height=h)
-                canvas.itemconfig(image_container, image = img)
-                canvas.pack()
-            except:
-                pass
-    except:
+    else:
+        is_running = False
         try:
-            shutil.copyfile(sample, progress)
-            im = Image.open(progress)
-            if h != im.size[1] or w != im.size[0]:
-                h = im.size[1]
-                w = im.size[0]
-                image_window.config(width=w, height=h)
-            img = PhotoImage(file=progress)
+            current_img = Image.open(sample)
+            if h > 756 or w > 756:
+                if w > h:
+                    wbase = 756
+                    wpercent = (wbase/w)
+                    hsize = int(h*float(wpercent))
+                    h = hsize
+                    w = wbase
+                else:
+                    hbase = 756
+                    hpercent = (hbase/h)
+                    wsize = int(w*float(hpercent))
+                    h = hbase
+                    w = wsize
+                current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
+                current_img.save(sample)
+            current_img = PhotoImage(file=sample, height=int(h), width=int(w))
             canvas.config(width=w, height=h)
-            canvas.itemconfig(image_container, image = img)
+            canvas.itemconfig(image_container, image = current_img)
             canvas.pack()
         except:
             pass
+        
 
 def updater():
+    global batch_name
+    global width
+    global height
+    global steps
+    global scale
+    global frozen_seed
+    global seed
+    global n_batches
+    global n_iter
+    global variance
+    global init_image
+    global init_strength
+    global gobig_maximize
+    global gobig_overlap
+    global method
+    global from_file
+    global cool_down
+    global use_jpg
+    global save_settings
+    global gobig
+    batch_name = batch_name_str.get()
+    width = int(width_scale.get())
+    height = int(height_scale.get())
+    steps = int(steps_scale.get())
+    scale = float(scale_scale.get())
+    frozen_seed = bool(frozen_seed_str.get())
+    seed = get_int_or_rdm(seed_entry.get())
+    n_batches = 1
+    n_iter = int(n_iter_entry.get())
+    variance = float(variance_str.get())
+    init_image = None
+    init_strength = 0.62
+    gobig_maximize = bool(gobig_maximize_str.get())
+    gobig_overlap = int(gobig_overlap_entry.get())
+    method = str(method_str.get())
+    from_file = './settings/prompts.txt'
+    cool_down = float(cool_down_entry.get())
+    use_jpg = bool(use_jpg_str.get())
+    save_settings = bool(save_settings_str.get())
+    gobig = bool(gobig_str.get())
+
     window.after(1000, refresh_image)
 
 def get_int_or_rdm(x):
