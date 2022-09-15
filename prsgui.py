@@ -496,7 +496,7 @@ def delete_prompt():
     global prompt_text_frame
     del prompt_list[len(prompt_list)-1]
     prompt_label[len(prompt_list)].destroy()
-    prompt_entry[len(prompt_list)].frame.destroy()
+    prompt_entry[len(prompt_list)].destroy()
     prompt_batches_label[len(prompt_list)].destroy()
     prompt_batches_entry[len(prompt_list)].destroy()
     prompt_label.pop(len(prompt_list))
@@ -601,115 +601,143 @@ def run_prs():
 
 def show_image():
     global sample
-    try:
-        list_of_files = glob.glob('./out/'+batch_name+'/*.png') # * means all if need specific format then *.csv
-        sample = max(list_of_files, key=os.path.getctime)
-        if os.path.exists(sample):
-            pass
-        else:
-            os.makedirs('./out/'+batch_name+'/')
-    except:
-        print("No Sample")
-        try:
-            os.makedirs('./out/'+batch_name+'/')
-        except:
-            pass
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(sample)
-        image.save(progress)
-    try:
-        shutil.copyfile(sample, progress)
-    except:
-        print("No Sample")
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(sample)
-        image.save(progress)
-    master_frame.pack()
-    im = Image.open(progress)
+    global current_img
     global h
     global w
-    h = im.size[1]
-    w = im.size[0]
+    global list_of_files
     global image_window
-    image_window = ttk.Frame(progress_frame, width=w, height=h)
-    image_window.pack()
     global canvas
-    canvas = Canvas(image_window, width=w, height=h)
-    global img
     global image_container
     try:
-        img = PhotoImage(file=progress)
+        if gobig_str.get() == True:
+            list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+            sample = max(list_of_files, key=os.path.getctime)
+        else:
+            list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+            # Remove item from list_of_files if it contains 'gobig'
+            list_of_files = [i for i in list_of_files if 'gobig' not in i]
+            sample = max(list_of_files, key=os.path.getctime)
     except:
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(progress)
-    image_container = canvas.create_image(0,0, anchor="nw",image=img)
-    canvas.pack()
+        try:
+            Image.new('RGB', (1,1), color = 'white').save('./out/'+batch_name+'/'+batch_name+'.png')
+            sample = './out/'+batch_name+'/'+batch_name+'.png'
+        except:
+            pass
+    master_frame.pack()
+    current_img = Image.open(sample)
+    wbase = 756
+    h = float(current_img.size[1])
+    w = float(current_img.size[0])
+    image_window = ttk.Frame(progress_frame, width=w, height=h)
+    image_window.pack()
+    if h > 756 or w > 756:
+        if w > h:
+            wbase = 756
+            wpercent = (wbase/w)
+            hsize = int(h*float(wpercent))
+            h = hsize
+            w = wbase
+        else:
+            hbase = 756
+            hpercent = (hbase/h)
+            wsize = int(w*float(hpercent))
+            h = hbase
+            w = wsize
+        current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
+        current_img.save(sample)
+    else:
+        h = float(current_img.size[1])
+        w = float(current_img.size[0])
+    current_img = PhotoImage(file=sample, height=int(h), width=int(w))
+    canvas = Canvas(image_window, width=w, height=h)
+    image_container = canvas.create_image(0,0, anchor="nw",image=current_img)
+    canvas.config(width=w, height=h)
+    canvas.itemconfig(image_container, image = current_img)
+    canvas.pack(expand=YES, fill=BOTH)
+    image_window.pack(expand=YES, fill=BOTH)
+    progress_frame.pack(expand=YES, fill=BOTH)
+    master_frame.pack(expand=YES, fill=BOTH)
 
 # Function to refresh the image in the GUI
 def refresh_image():
     global is_running
     global p
-    try:
-        list_of_files = glob.glob('./out/'+batch_name+'/*.png') # * means all if need specific format then *.csv
-        sample = max(list_of_files, key=os.path.getctime)
-    except:
-        print("No Sample")
-        image = Image.new('RGB', (512, 512), (255, 255, 255))
-        image.save(sample)
-        image.save(progress)
+    global current_img
+    global sample
+    global list_of_files
+    global h
+    global w
     updater()
+    if gobig_str.get() == True:
+        list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+        sample = max(list_of_files, key=os.path.getctime)
+    else:
+        list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
+        # Remove item from list_of_files if it contains 'gobig'
+        list_of_files = [i for i in list_of_files if 'gobig' not in i]
+        sample = max(list_of_files, key=os.path.getctime)
     # Check if thread is still running
-    try:
+    if is_running == True:
         if p.returncode == None:
-            is_running = True
             try:
-                im = Image.open(sample)
                 global h
                 global w
-                if h != im.size[1] or w != im.size[0]:
-                    h = im.size[1]
-                    w = im.size[0]
-                    image_window.config(width=w, height=h)
-                global img
                 global image_container
                 global canvas
-                img = PhotoImage(file=sample)
-                canvas.config(width=w, height=h)
-                canvas.itemconfig(image_container, image = img)
-                canvas.pack()
                 global has_run
+                current_img = Image.open(sample)
+                if h > 756 or w > 756:
+                    if w > h:
+                        wbase = 756
+                        wpercent = (wbase/w)
+                        hsize = int(h*float(wpercent))
+                        h = hsize
+                        w = wbase
+                    else:
+                        hbase = 756
+                        hpercent = (hbase/h)
+                        wsize = int(w*float(hpercent))
+                        h = hbase
+                        w = wsize
+                    current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
+                    current_img.save(sample)
+                else:
+                    h = float(current_img.size[1])
+                    w = float(current_img.size[0])
                 has_run = True
             except:
                 pass
-        else:
-            is_running = False
-            try:
-                shutil.copyfile(sample, progress)
-                im = Image.open(progress)
-                if h != im.size[1] or w != im.size[0]:
-                    h = im.size[1]
-                    w = im.size[0]
-                    image_window.config(width=w, height=h)
-                img = PhotoImage(file=progress)
-                canvas.config(width=w, height=h)
-                canvas.itemconfig(image_container, image = img)
-                canvas.pack()
-            except:
-                pass
-    except:
+    else:
+        is_running = False
         try:
-            shutil.copyfile(sample, progress)
-            im = Image.open(progress)
-            if h != im.size[1] or w != im.size[0]:
-                h = im.size[1]
-                w = im.size[0]
-                image_window.config(width=w, height=h)
-            img = PhotoImage(file=progress)
-            canvas.config(width=w, height=h)
-            canvas.itemconfig(image_container, image = img)
-            canvas.pack()
+            current_img = Image.open(sample)
+            if h > 756 or w > 756:
+                if w > h:
+                    wbase = 756
+                    wpercent = (wbase/w)
+                    hsize = int(h*float(wpercent))
+                    h = hsize
+                    w = wbase
+                else:
+                    hbase = 756
+                    hpercent = (hbase/h)
+                    wsize = int(w*float(hpercent))
+                    h = hbase
+                    w = wsize
+                current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
+                current_img.save(sample)
+            else:
+                h = float(current_img.size[1])
+                w = float(current_img.size[0])
         except:
             pass
+    current_img = PhotoImage(file=sample, height=int(h), width=int(w))
+    canvas.config(width=w, height=h)
+    canvas.itemconfig(image_container, image = current_img)
+    canvas.pack(expand=YES, fill=BOTH)
+    image_window.pack(expand=YES, fill=BOTH)
+    progress_frame.pack(expand=YES, fill=BOTH)
+    master_frame.pack(expand=YES, fill=BOTH)
 
 def updater():
     window.after(1000, refresh_image)
