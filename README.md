@@ -1,4 +1,4 @@
-# VisualDiffusion v0.3.1 [NEW MAKEGUDPICS UPDATE](#new-makegudpics-update)
+# VisualDiffusion v0.3.2 [NEW MAKEGUDPICS UPDATE](#new-makegudpics-update)
 A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Notebooks.
 
 [CLICK HERE FOR PROGROCK DIFFUSION](#instructions-for-using-visualdiffusion-with-progrockdiffusion) or [CLICK HERE FOR PROGROCK-STABLE](#instructions-for-using-visualdiffusion-with-progrock-stable)
@@ -6,9 +6,16 @@ A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Noteboo
 
 If you would like support me, the development of this GUI, or maybe you have a feature that you desperately want added, please consider supporting me and this software's development on my [Patreon](https://www.patreon.com/knobuddy).
 
+# Instructions for loading VisualDiffusion
+```
+cd progrockdiffusion -or- cd prs
+python visualdiffusion\vd.py
+```
+This will open either PRS or PRD depending on what is installed. If PRS is installed it will ask which GUI you would like to use, PRSGUI or MakeGUDPics.
+
 # Instructions for updating VisualDiffusion
 ```
-cd progrockdiffusion\visualdiffusion
+cd progrockdiffusion\visualdiffusion -or- cd prs\visualdiffusion
 git pull
 ```
 
@@ -27,13 +34,13 @@ git clone https://github.com/KnoBuddy/visualdiffusion/
 ```
 conda activate prs
 cd prs
-python visualdiffusion\makegudpics.py
+python visualdiffusion\vd.py
 ```
 #### [Linux/MacOS]
 ```
 conda activate prs
 cd prs
-python3 visualdiffusion\makegudpics.py
+python3 visualdiffusion\vd.py
 ```
 
 # Instructions for using VisualDiffusion with ProgRock-Stable
@@ -51,13 +58,13 @@ git clone https://github.com/KnoBuddy/visualdiffusion/
 ```
 conda activate prs
 cd prs
-python visualdiffusion\prsgui.py
+python visualdiffusion\vd.py
 ```
 ### [Linux/MacOS]
 ```
 conda activate prs
 cd prs
-python3 visualdiffusion\prsgui.py
+python3 visualdiffusion\vd.py
 ```
 ## Open the GUI
 
@@ -84,13 +91,13 @@ git clone https://github.com/KnoBuddy/visualdiffusion/
 ```
 conda activate progrockdiffusion
 cd progrockdiffusion
-python visualdiffusion\prdgui.py
+python visualdiffusion\vd.py
 ```
 ### [Linux/MacOS]
 ```
 conda activate progrockdiffusion
 cd progrockdiffusion
-python3 visualdiffusion\prdgui.py
+python3 visualdiffusion\vd.py
 ```
 ## Open the GUI
 
