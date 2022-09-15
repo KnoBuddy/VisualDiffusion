@@ -197,7 +197,7 @@ def draw_main_window():
 
     # Draw Main Window
     window = Tk()
-    window.title('VisualDiffusion (a GUI for ProgRock-Stable): '+batch_name+' '+gui_settings)
+    window.title('VisualDiffusion (MakeGUDPICS Update for ProgRock-Stable): '+batch_name+' '+gui_settings)
 
     
     # Add Style for Frames
@@ -508,7 +508,7 @@ def save_prompts(save):
         with open(job_file, 'w+', encoding='utf_8') as f:
             json.dump(json_set, f, ensure_ascii=False, indent=4)
         print('Running job')
-    window.title('VisualDiffusion (a GUI for ProgRock-Stable): '+batch_name+' '+gui_settings)
+    window.title('VisualDiffusion (MakeGUDPICS Update for ProgRock-Stable): '+batch_name+' '+gui_settings)
 
 def delete_prompt():
     global prompt_list
@@ -663,12 +663,18 @@ def show_image():
             w = wsize
         current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
         current_img.save(sample)
+    else:
+        h = float(current_img.size[1])
+        w = float(current_img.size[0])
     current_img = PhotoImage(file=sample, height=int(h), width=int(w))
     canvas = Canvas(image_window, width=w, height=h)
     image_container = canvas.create_image(0,0, anchor="nw",image=current_img)
     canvas.config(width=w, height=h)
     canvas.itemconfig(image_container, image = current_img)
-    canvas.pack()
+    canvas.pack(expand=YES, fill=BOTH)
+    image_window.pack(expand=YES, fill=BOTH)
+    progress_frame.pack(expand=YES, fill=BOTH)
+    master_frame.pack(expand=YES, fill=BOTH)
 
 # Function to refresh the image in the GUI
 def refresh_image():
@@ -677,6 +683,8 @@ def refresh_image():
     global current_img
     global sample
     global list_of_files
+    global h
+    global w
     updater()
     if gobig_str.get() == True:
         list_of_files = glob.glob('./out/'+batch_name+'/'+batch_name+'*.png')
@@ -711,10 +719,9 @@ def refresh_image():
                         w = wsize
                     current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
                     current_img.save(sample)
-                current_img = PhotoImage(file=sample, height=int(h), width=int(w))
-                canvas.config(width=w, height=h)
-                canvas.itemconfig(image_container, image = current_img)
-                canvas.pack()
+                else:
+                    h = float(current_img.size[1])
+                    w = float(current_img.size[0])
                 has_run = True
             except:
                 pass
@@ -737,12 +744,18 @@ def refresh_image():
                     w = wsize
                 current_img = current_img.resize((int(w),int(h)), Image.Resampling.BICUBIC)
                 current_img.save(sample)
-            current_img = PhotoImage(file=sample, height=int(h), width=int(w))
-            canvas.config(width=w, height=h)
-            canvas.itemconfig(image_container, image = current_img)
-            canvas.pack()
+            else:
+                h = float(current_img.size[1])
+                w = float(current_img.size[0])
         except:
             pass
+    current_img = PhotoImage(file=sample, height=int(h), width=int(w))
+    canvas.config(width=w, height=h)
+    canvas.itemconfig(image_container, image = current_img)
+    canvas.pack(expand=YES, fill=BOTH)
+    image_window.pack(expand=YES, fill=BOTH)
+    progress_frame.pack(expand=YES, fill=BOTH)
+    master_frame.pack(expand=YES, fill=BOTH)
         
 
 def updater():
