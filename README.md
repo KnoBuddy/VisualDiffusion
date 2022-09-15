@@ -30,7 +30,7 @@ git pull
 
 # NEW MAKEGUDPICS UPDATE
 
-![image](https://user-images.githubusercontent.com/64171756/190328696-067e7e4a-b7c2-4aeb-a45b-0cad217a0442.png)
+![image](https://user-images.githubusercontent.com/64171756/190497526-0aa75feb-cb77-4b11-9238-92cc6db22944.png)
 ## Instructions 
 Install PRS and ensure it is working and cd into directory. Follow the [Instructions Here](https://github.com/lowfuel/progrock-stable).
 
