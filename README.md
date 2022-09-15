@@ -1,4 +1,4 @@
-# VisualDiffusion v0.3.0 [NEW MAKEGUDPICS UPDATE](#new-makegudpics-update)
+# VisualDiffusion v0.3.1 [NEW MAKEGUDPICS UPDATE](#new-makegudpics-update)
 A GUI for text2img diffusion, as a visual alternative to CLI and Jupyter Notebooks.
 
 [CLICK HERE FOR PROGROCK DIFFUSION](#instructions-for-using-visualdiffusion-with-progrockdiffusion) or [CLICK HERE FOR PROGROCK-STABLE](#instructions-for-using-visualdiffusion-with-progrock-stable)
@@ -14,7 +14,7 @@ git pull
 
 # NEW MAKEGUDPICS UPDATE
 
-![image](https://user-images.githubusercontent.com/64171756/189456416-bb601f28-6ada-49b3-b03e-a1a514cda51b.png)
+![image](https://user-images.githubusercontent.com/64171756/190328696-067e7e4a-b7c2-4aeb-a45b-0cad217a0442.png)
 ## Instructions 
 Install PRS and ensure it is working and cd into directory.Follow the [Instruction Here](https://github.com/lowfuel/progrock-stable).
 ### Install the GUI
