@@ -34,7 +34,7 @@ git pull
 ## Instructions 
 Install PRS and ensure it is working and cd into directory. Follow the [Instructions Here](https://github.com/lowfuel/progrock-stable).
 
-Adjust the sliders according to how much you want that portion of the prompt to effect the image.
+Adjust the sliders according to how much you want that portion of the prompt to effect the image. (Prompt weights are currently only working in the dev version of PRS.)
 
 # Instructions for using VisualDiffusion with ProgRock-Stable
 ![image](https://user-images.githubusercontent.com/64171756/187046564-6ce159f9-202b-4b9e-b21a-bbba50e4ad68.png)
